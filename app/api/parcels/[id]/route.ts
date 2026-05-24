@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { ApiError, withErrors } from '@/lib/api/errors';
 import { db } from '@/lib/db';
+import { logParcelAccess } from '@/lib/auth/audit';
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 
@@ -40,8 +41,12 @@ interface OwnerRow {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function handler(_req: Request, ctx: { params: { id: string } }) {
+async function handler(req: Request, ctx: { params: { id: string } }) {
   const { id } = ParamsSchema.parse(ctx.params);
+
+  // Audit hit — fire and forget so the response isn't blocked. Bot UAs are
+  // filtered out inside the helper.
+  void logParcelAccess(req, id);
 
   const rows = await db.$queryRaw<ParcelRow[]>`
     SELECT
