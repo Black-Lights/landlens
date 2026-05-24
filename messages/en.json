@@ -1,6 +1,132 @@
 {
   "_meta": {
     "locale": "en",
-    "note": "Sprint 1 stub. Real catalog ships in Sprint 5 (i18n)."
+    "name": "English",
+    "nativeName": "English",
+    "direction": "ltr"
+  },
+  "Common": {
+    "loadingMap": "Loading map…",
+    "close": "Close",
+    "unknown": "Unknown"
+  },
+  "Header": {
+    "languageButtonAria": "Change language"
+  },
+  "LanguageSwitcher": {
+    "ariaLabel": "Change language",
+    "label": "Language",
+    "en": "English",
+    "hi": "हिन्दी",
+    "ur": "اردو"
+  },
+  "Breadcrumb": {
+    "ariaLabel": "Map location",
+    "india": "India"
+  },
+  "Basemap": {
+    "buttonAria": "Change basemap",
+    "streets": "Streets",
+    "satellite": "Satellite",
+    "terrain": "Terrain",
+    "bhuvan": "Bhuvan"
+  },
+  "LocateMe": {
+    "buttonAria": "Find land around me",
+    "notSupported": "Location is not supported in this browser",
+    "lowAccuracy": "Location accuracy is low — try moving to open sky",
+    "permissionDenied": "Enable location in your browser settings to use this",
+    "failed": "Could not get your location — try again"
+  },
+  "NorthArrow": {
+    "resetAria": "Reset bearing to north"
+  },
+  "CoordReadout": {
+    "switchTitle": "Click to switch (currently {mode})",
+    "modeLatLng": "lat/lng",
+    "modeUtm": "UTM",
+    "utmUnavailable": "UTM N/A"
+  },
+  "ParcelSidebar": {
+    "ariaLabel": "Parcel details",
+    "closeAria": "Close parcel details",
+    "header": "Parcel",
+    "loading": "Loading parcel…",
+    "areaAcres": "Area (acres)",
+    "areaHectares": "Area (hectares)",
+    "areaSqm": "Area (sq m)",
+    "districtLgd": "District LGD",
+    "ownershipHistory": "Ownership history",
+    "mockBannerLead": "These records are",
+    "mockBannerEmphasis": "mock data",
+    "mockBannerTrail": "generated for Sprint 3. Real records from state portals land in Sprint 7."
+  },
+  "Ownership": {
+    "noRecords": "No ownership records on file.",
+    "current": "Current",
+    "relation": "S/o · D/o · W/o {name}",
+    "share": "Share {fraction}",
+    "registered": "Registered {date}",
+    "type": {
+      "sole": "Sole",
+      "joint": "Joint",
+      "huf": "HUF"
+    }
+  },
+  "LandType": {
+    "agricultural": "Agricultural",
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "industrial": "Industrial",
+    "forest": "Forest",
+    "government": "Government",
+    "water_body": "Water body",
+    "wasteland": "Wasteland",
+    "mixed": "Mixed"
+  },
+  "BoundarySource": {
+    "mock": "Mock",
+    "osm": "OSM",
+    "govt_bhunaksha": "Govt",
+    "ai_with_constraints": "AI",
+    "ai_only": "AI",
+    "fmb_reconstructed": "FMB",
+    "user_corrected": "User"
+  },
+  "Search": {
+    "buttonAria": "Open search (Ctrl+K)",
+    "buttonTitle": "Search (Ctrl+K)",
+    "buttonLabel": "Search…",
+    "dialogAria": "Search",
+    "closeAria": "Close search",
+    "placeholder": "Search states, districts, villages, khasra, owners…",
+    "kbdEsc": "esc",
+    "kbdNavigate": "navigate",
+    "kbdOpen": "open",
+    "kbdClose": "close",
+    "footerPowered": "powered by pg_trgm",
+    "tryHintPrefix": "Try",
+    "tryHintSuffix": "or a khasra number.",
+    "noResults": "No results for \"{query}\".",
+    "sections": {
+      "recent": "Recent",
+      "state": "States",
+      "district": "Districts",
+      "village": "Villages",
+      "khasra": "Khasra Nos",
+      "owner": "Owners"
+    },
+    "types": {
+      "state": "state",
+      "district": "district",
+      "village": "village",
+      "khasra": "khasra",
+      "owner": "owner"
+    }
+  },
+  "Errors": {
+    "districtsUnavailable": "Districts not available for {state}",
+    "districtsFailed": "Districts request failed for {state}",
+    "parcelFetchFailed": "Failed ({status})"
   }
 }

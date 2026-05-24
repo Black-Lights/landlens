@@ -1,6 +1,132 @@
 {
   "_meta": {
     "locale": "ur",
-    "note": "Sprint 1 stub. Real catalog ships in Sprint 5 (i18n). RTL."
+    "name": "Urdu",
+    "nativeName": "اردو",
+    "direction": "rtl"
+  },
+  "Common": {
+    "loadingMap": "نقشہ لوڈ ہو رہا ہے…",
+    "close": "بند کریں",
+    "unknown": "نامعلوم"
+  },
+  "Header": {
+    "languageButtonAria": "زبان تبدیل کریں"
+  },
+  "LanguageSwitcher": {
+    "ariaLabel": "زبان تبدیل کریں",
+    "label": "زبان",
+    "en": "English",
+    "hi": "हिन्दी",
+    "ur": "اردو"
+  },
+  "Breadcrumb": {
+    "ariaLabel": "نقشے کا مقام",
+    "india": "بھارت"
+  },
+  "Basemap": {
+    "buttonAria": "بیس میپ تبدیل کریں",
+    "streets": "گلیاں",
+    "satellite": "سیٹلائٹ",
+    "terrain": "زمینی نقشہ",
+    "bhuvan": "بھون"
+  },
+  "LocateMe": {
+    "buttonAria": "میرے ارد گرد زمین تلاش کریں",
+    "notSupported": "یہ براؤزر لوکیشن کی حمایت نہیں کرتا",
+    "lowAccuracy": "لوکیشن کی درستگی کم ہے — کھلے آسمان کے نیچے جائیں",
+    "permissionDenied": "اسے استعمال کرنے کے لیے براؤزر کی ترتیبات میں لوکیشن فعال کریں",
+    "failed": "آپ کی لوکیشن نہیں مل سکی — دوبارہ کوشش کریں"
+  },
+  "NorthArrow": {
+    "resetAria": "شمال کی طرف ری سیٹ کریں"
+  },
+  "CoordReadout": {
+    "switchTitle": "تبدیل کرنے کے لیے کلک کریں (موجودہ {mode})",
+    "modeLatLng": "عرض/طول بلد",
+    "modeUtm": "UTM",
+    "utmUnavailable": "UTM دستیاب نہیں"
+  },
+  "ParcelSidebar": {
+    "ariaLabel": "پارسل کی تفصیلات",
+    "closeAria": "پارسل کی تفصیلات بند کریں",
+    "header": "پارسل",
+    "loading": "پارسل لوڈ ہو رہا ہے…",
+    "areaAcres": "رقبہ (ایکڑ)",
+    "areaHectares": "رقبہ (ہیکٹر)",
+    "areaSqm": "رقبہ (مربع میٹر)",
+    "districtLgd": "ضلع LGD",
+    "ownershipHistory": "ملکیت کی تاریخ",
+    "mockBannerLead": "یہ ریکارڈز",
+    "mockBannerEmphasis": "نمونہ ڈیٹا",
+    "mockBannerTrail": "ہیں، جو سپرنٹ 3 کے لیے بنائے گئے۔ ریاستی پورٹلز سے اصل ریکارڈز سپرنٹ 7 میں آئیں گے۔"
+  },
+  "Ownership": {
+    "noRecords": "کوئی ملکیت کا ریکارڈ موجود نہیں ہے۔",
+    "current": "موجودہ",
+    "relation": "بیٹا/بیٹی/بیوی · {name}",
+    "share": "حصہ {fraction}",
+    "registered": "رجسٹرڈ {date}",
+    "type": {
+      "sole": "اکیلا",
+      "joint": "مشترکہ",
+      "huf": "HUF"
+    }
+  },
+  "LandType": {
+    "agricultural": "زرعی",
+    "residential": "رہائشی",
+    "commercial": "تجارتی",
+    "industrial": "صنعتی",
+    "forest": "جنگل",
+    "government": "سرکاری",
+    "water_body": "آبی ذخیرہ",
+    "wasteland": "بنجر زمین",
+    "mixed": "مخلوط"
+  },
+  "BoundarySource": {
+    "mock": "نمونہ",
+    "osm": "OSM",
+    "govt_bhunaksha": "سرکاری",
+    "ai_with_constraints": "AI",
+    "ai_only": "AI",
+    "fmb_reconstructed": "FMB",
+    "user_corrected": "صارف"
+  },
+  "Search": {
+    "buttonAria": "تلاش کھولیں (Ctrl+K)",
+    "buttonTitle": "تلاش (Ctrl+K)",
+    "buttonLabel": "تلاش…",
+    "dialogAria": "تلاش",
+    "closeAria": "تلاش بند کریں",
+    "placeholder": "ریاستیں، اضلاع، گاؤں، کھسرہ، مالکان تلاش کریں…",
+    "kbdEsc": "esc",
+    "kbdNavigate": "نیویگیٹ",
+    "kbdOpen": "کھولیں",
+    "kbdClose": "بند",
+    "footerPowered": "pg_trgm کے ذریعے چلایا گیا",
+    "tryHintPrefix": "آزمائیں",
+    "tryHintSuffix": "یا کوئی کھسرہ نمبر۔",
+    "noResults": "\"{query}\" کے لیے کوئی نتیجہ نہیں۔",
+    "sections": {
+      "recent": "حالیہ",
+      "state": "ریاستیں",
+      "district": "اضلاع",
+      "village": "گاؤں",
+      "khasra": "کھسرہ نمبر",
+      "owner": "مالکان"
+    },
+    "types": {
+      "state": "ریاست",
+      "district": "ضلع",
+      "village": "گاؤں",
+      "khasra": "کھسرہ",
+      "owner": "مالک"
+    }
+  },
+  "Errors": {
+    "districtsUnavailable": "{state} کے لیے اضلاع دستیاب نہیں ہیں",
+    "districtsFailed": "{state} کے لیے اضلاع کی درخواست ناکام ہوئی",
+    "parcelFetchFailed": "ناکام ({status})"
   }
 }

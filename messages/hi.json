@@ -1,6 +1,132 @@
 {
   "_meta": {
     "locale": "hi",
-    "note": "Sprint 1 stub. Real catalog ships in Sprint 5 (i18n)."
+    "name": "Hindi",
+    "nativeName": "हिन्दी",
+    "direction": "ltr"
+  },
+  "Common": {
+    "loadingMap": "मानचित्र लोड हो रहा है…",
+    "close": "बंद करें",
+    "unknown": "अज्ञात"
+  },
+  "Header": {
+    "languageButtonAria": "भाषा बदलें"
+  },
+  "LanguageSwitcher": {
+    "ariaLabel": "भाषा बदलें",
+    "label": "भाषा",
+    "en": "English",
+    "hi": "हिन्दी",
+    "ur": "اردو"
+  },
+  "Breadcrumb": {
+    "ariaLabel": "मानचित्र स्थान",
+    "india": "भारत"
+  },
+  "Basemap": {
+    "buttonAria": "बेसमैप बदलें",
+    "streets": "सड़कें",
+    "satellite": "सैटेलाइट",
+    "terrain": "भू-भाग",
+    "bhuvan": "भुवन"
+  },
+  "LocateMe": {
+    "buttonAria": "मेरे आस-पास की भूमि खोजें",
+    "notSupported": "यह ब्राउज़र लोकेशन का समर्थन नहीं करता",
+    "lowAccuracy": "लोकेशन की सटीकता कम है — खुले आसमान के नीचे जाएँ",
+    "permissionDenied": "इसका उपयोग करने के लिए ब्राउज़र सेटिंग्स में लोकेशन सक्षम करें",
+    "failed": "आपकी लोकेशन नहीं मिल सकी — पुनः प्रयास करें"
+  },
+  "NorthArrow": {
+    "resetAria": "दिशा को उत्तर पर रीसेट करें"
+  },
+  "CoordReadout": {
+    "switchTitle": "बदलने के लिए क्लिक करें (वर्तमान में {mode})",
+    "modeLatLng": "अक्षांश/देशांतर",
+    "modeUtm": "UTM",
+    "utmUnavailable": "UTM उपलब्ध नहीं"
+  },
+  "ParcelSidebar": {
+    "ariaLabel": "भूखंड का विवरण",
+    "closeAria": "भूखंड का विवरण बंद करें",
+    "header": "भूखंड",
+    "loading": "भूखंड लोड हो रहा है…",
+    "areaAcres": "क्षेत्रफल (एकड़)",
+    "areaHectares": "क्षेत्रफल (हेक्टेयर)",
+    "areaSqm": "क्षेत्रफल (वर्ग मीटर)",
+    "districtLgd": "जिला LGD",
+    "ownershipHistory": "स्वामित्व इतिहास",
+    "mockBannerLead": "ये अभिलेख",
+    "mockBannerEmphasis": "नमूना डेटा",
+    "mockBannerTrail": "हैं, जो स्प्रिंट 3 के लिए बनाए गए। राज्य पोर्टलों के वास्तविक अभिलेख स्प्रिंट 7 में आएँगे।"
+  },
+  "Ownership": {
+    "noRecords": "कोई स्वामित्व अभिलेख दर्ज नहीं है।",
+    "current": "वर्तमान",
+    "relation": "पुत्र/पुत्री/पत्नी · {name}",
+    "share": "अंश {fraction}",
+    "registered": "पंजीकृत {date}",
+    "type": {
+      "sole": "एकल",
+      "joint": "संयुक्त",
+      "huf": "HUF"
+    }
+  },
+  "LandType": {
+    "agricultural": "कृषि",
+    "residential": "आवासीय",
+    "commercial": "वाणिज्यिक",
+    "industrial": "औद्योगिक",
+    "forest": "वन",
+    "government": "सरकारी",
+    "water_body": "जल निकाय",
+    "wasteland": "बंजर भूमि",
+    "mixed": "मिश्रित"
+  },
+  "BoundarySource": {
+    "mock": "नमूना",
+    "osm": "OSM",
+    "govt_bhunaksha": "सरकारी",
+    "ai_with_constraints": "AI",
+    "ai_only": "AI",
+    "fmb_reconstructed": "FMB",
+    "user_corrected": "उपयोगकर्ता"
+  },
+  "Search": {
+    "buttonAria": "खोज खोलें (Ctrl+K)",
+    "buttonTitle": "खोजें (Ctrl+K)",
+    "buttonLabel": "खोजें…",
+    "dialogAria": "खोज",
+    "closeAria": "खोज बंद करें",
+    "placeholder": "राज्य, जिले, गाँव, खसरा, मालिक खोजें…",
+    "kbdEsc": "esc",
+    "kbdNavigate": "नेविगेट",
+    "kbdOpen": "खोलें",
+    "kbdClose": "बंद",
+    "footerPowered": "pg_trgm द्वारा संचालित",
+    "tryHintPrefix": "उदाहरण के लिए",
+    "tryHintSuffix": "या एक खसरा संख्या आज़माएँ।",
+    "noResults": "\"{query}\" के लिए कोई परिणाम नहीं।",
+    "sections": {
+      "recent": "हाल ही में",
+      "state": "राज्य",
+      "district": "जिले",
+      "village": "गाँव",
+      "khasra": "खसरा संख्या",
+      "owner": "मालिक"
+    },
+    "types": {
+      "state": "राज्य",
+      "district": "जिला",
+      "village": "गाँव",
+      "khasra": "खसरा",
+      "owner": "मालिक"
+    }
+  },
+  "Errors": {
+    "districtsUnavailable": "{state} के लिए जिले उपलब्ध नहीं हैं",
+    "districtsFailed": "{state} के लिए जिलों का अनुरोध विफल हुआ",
+    "parcelFetchFailed": "विफल ({status})"
   }
 }
