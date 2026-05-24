@@ -29,6 +29,9 @@ import { CoordReadout } from './CoordReadout';
 import { NorthArrow } from './NorthArrow';
 import { LocateMe } from './LocateMe';
 import { ParcelSidebar } from './ParcelSidebar';
+import { SearchPalette } from './SearchPalette';
+import { Search } from 'lucide-react';
+import type { SearchResult } from '@/app/api/search/route';
 
 // ── Layer / source ids ───────────────────────────────────────────────────────
 const STATES_SRC = 'india-states';
@@ -105,6 +108,7 @@ export function MapView() {
   const [parcelsUrl, setParcelsUrl] = useState<string | null>(null);
   const [districtsError, setDistrictsError] = useState<string | null>(null);
   const [selectedParcel, setSelectedParcel] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const mapStyle = useMemo(
     () => basemaps[basemapId].style({ maptilerKey }),
@@ -277,6 +281,173 @@ export function MapView() {
   const onResetBearing = useCallback(() => {
     mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 300 });
   }, []);
+
+  // ── Search → drill ──────────────────────────────────────────────────────
+  // Translates a /api/search result into the drill state + layer fetches
+  // needed to render it. Mirrors the click-handler drill logic so a search
+  // pick lands the user in the same place a manual click would.
+  const goToSearchResult = useCallback(async (r: SearchResult) => {
+    setDistrictsError(null);
+    setSelectedParcel(null);
+
+    if (r.type === 'state') {
+      const name = r.label;
+      if (r.bbox) {
+        mapRef.current?.fitBounds(
+          [[r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]],
+          { padding: 60, duration: 900, maxZoom: DRILL_ZOOM.state + 0.5 },
+        );
+      }
+      setDrill({ state: { name } });
+      setTrail([{ level: 'india', label: 'India' }, { level: 'state', label: name }]);
+      setVillagesUrl(null);
+      setParcelsUrl(null);
+      try {
+        const res = await fetch(`/api/districts?state=${encodeURIComponent(name)}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setDistrictsError(body?.error?.message ?? `Districts not available for ${name}`);
+          setDistrictsUrl(null);
+        } else {
+          setDistrictsUrl(`/api/districts?state=${encodeURIComponent(name)}`);
+        }
+      } catch {
+        setDistrictsError(`Districts request failed for ${name}`);
+        setDistrictsUrl(null);
+      }
+      return;
+    }
+
+    if (r.type === 'district') {
+      const stateName = r.ancestors.state?.name;
+      const districtName = r.label;
+      if (r.bbox) {
+        mapRef.current?.fitBounds(
+          [[r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]],
+          { padding: 60, duration: 900, maxZoom: DRILL_ZOOM.district + 0.5 },
+        );
+      }
+      setDrill({ state: stateName ? { name: stateName } : undefined, district: { name: districtName } });
+      const crumbs: DrillCrumb[] = [{ level: 'india', label: 'India' }];
+      if (stateName) crumbs.push({ level: 'state', label: stateName });
+      crumbs.push({ level: 'district', label: districtName });
+      setTrail(crumbs);
+      setParcelsUrl(null);
+      // Districts file may not be bundled — best effort, mirrors state click.
+      if (stateName) {
+        try {
+          const res = await fetch(`/api/districts?state=${encodeURIComponent(stateName)}`);
+          setDistrictsUrl(res.ok ? `/api/districts?state=${encodeURIComponent(stateName)}` : null);
+        } catch {
+          setDistrictsUrl(null);
+        }
+      }
+      // Load villages within the district bbox so subsequent clicks work.
+      if (r.bbox) {
+        const [w, s, e, n] = r.bbox;
+        setVillagesUrl(`/api/villages?bbox=${encodeURIComponent(`${w},${s},${e},${n}`)}`);
+      }
+      return;
+    }
+
+    if (r.type === 'village') {
+      const stateName = r.ancestors.state?.name;
+      const districtName = r.ancestors.district?.name;
+      const villageName = r.label;
+      if (r.bbox) {
+        mapRef.current?.fitBounds(
+          [[r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]],
+          { padding: 60, duration: 900, maxZoom: DRILL_ZOOM.village + 0.8 },
+        );
+      }
+      setDrill({
+        state: stateName ? { name: stateName } : undefined,
+        district: districtName ? { name: districtName } : undefined,
+        village: { id: r.id, name: villageName },
+      });
+      const crumbs: DrillCrumb[] = [{ level: 'india', label: 'India' }];
+      if (stateName) crumbs.push({ level: 'state', label: stateName });
+      if (districtName) crumbs.push({ level: 'district', label: districtName });
+      crumbs.push({ level: 'village', label: villageName });
+      setTrail(crumbs);
+      if (stateName) {
+        try {
+          const res = await fetch(`/api/districts?state=${encodeURIComponent(stateName)}`);
+          setDistrictsUrl(res.ok ? `/api/districts?state=${encodeURIComponent(stateName)}` : null);
+        } catch {
+          setDistrictsUrl(null);
+        }
+      }
+      if (r.bbox) {
+        // Use a slightly expanded bbox so villages around the picked one also
+        // paint (handy for visual context).
+        const [w, s, e, n] = r.bbox;
+        const dx = (e - w) * 0.5;
+        const dy = (n - s) * 0.5;
+        setVillagesUrl(
+          `/api/villages?bbox=${encodeURIComponent(`${w - dx},${s - dy},${e + dx},${n + dy}`)}`,
+        );
+      }
+      setParcelsUrl(`/api/parcels/by-village?village_id=${r.id}`);
+      return;
+    }
+
+    // khasra / owner → zoom to centroid + load parcels + open sidebar.
+    if (r.type === 'khasra' || r.type === 'owner') {
+      const target = r.centroid;
+      const villageId = r.ancestors.village?.id;
+      const villageName = r.ancestors.village?.name;
+      const districtName = r.ancestors.district?.name;
+      const stateName = r.ancestors.state?.name;
+      if (target) {
+        mapRef.current?.flyTo({ center: target, zoom: 17, duration: 1000 });
+      }
+      setDrill({
+        state: stateName ? { name: stateName } : undefined,
+        district: districtName ? { name: districtName } : undefined,
+        village: villageId && villageName ? { id: villageId, name: villageName } : undefined,
+      });
+      const crumbs: DrillCrumb[] = [{ level: 'india', label: 'India' }];
+      if (stateName) crumbs.push({ level: 'state', label: stateName });
+      if (districtName) crumbs.push({ level: 'district', label: districtName });
+      if (villageName) crumbs.push({ level: 'village', label: villageName });
+      setTrail(crumbs);
+      if (stateName) {
+        try {
+          const res = await fetch(`/api/districts?state=${encodeURIComponent(stateName)}`);
+          setDistrictsUrl(res.ok ? `/api/districts?state=${encodeURIComponent(stateName)}` : null);
+        } catch {
+          setDistrictsUrl(null);
+        }
+      }
+      if (villageId) {
+        setParcelsUrl(`/api/parcels/by-village?village_id=${villageId}`);
+      }
+      if (r.parcel_id) setSelectedParcel(r.parcel_id);
+    }
+  }, []);
+
+  // Cmd/Ctrl+K opens search. Ignore when the user is typing in another input.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const isShortcut = (e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey);
+      if (!isShortcut) return;
+      const target = e.target as HTMLElement | null;
+      // Don't steal focus from active text inputs — but our own palette input
+      // has its own Esc handling and will already be open.
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        if (!searchOpen) {
+          // Only suppress when the user is mid-typing elsewhere AND palette
+          // isn't already open. The palette itself can re-trigger fine.
+          return;
+        }
+      }
+      e.preventDefault();
+      setSearchOpen((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [searchOpen]);
 
   // ── GPS source / pulse ──────────────────────────────────────────────────
   const gpsGeoJson = useMemo<FeatureCollection | null>(() => {
@@ -467,6 +638,20 @@ export function MapView() {
       <BasemapSwitcher value={basemapId} onChange={setBasemapId} maptilerKey={maptilerKey} />
       <Breadcrumb trail={trail} onJump={onJump} />
 
+      <button
+        type="button"
+        onClick={() => setSearchOpen(true)}
+        aria-label="Open search (Ctrl+K)"
+        title="Search (Ctrl+K)"
+        className="pointer-events-auto absolute left-3 top-14 z-20 flex h-10 items-center gap-2 rounded-full bg-white/95 pl-3 pr-3.5 text-sm text-slate-600 shadow-md ring-1 ring-black/10 hover:bg-white hover:text-slate-900 md:pr-4"
+      >
+        <Search className="h-4 w-4" aria-hidden />
+        <span className="hidden sm:inline">Search…</span>
+        <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 md:inline-block">
+          ⌘K
+        </kbd>
+      </button>
+
       {districtsError && (
         <div
           role="status"
@@ -489,6 +674,12 @@ export function MapView() {
       </div>
 
       <ParcelSidebar parcelId={selectedParcel} onClose={() => setSelectedParcel(null)} />
+
+      <SearchPalette
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSelect={(r) => void goToSearchResult(r)}
+      />
     </div>
   );
 }
