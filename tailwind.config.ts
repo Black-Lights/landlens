@@ -16,9 +16,12 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        devanagari: ['"Noto Sans Devanagari"', 'sans-serif'],
-        nastaliq: ['"Noto Nastaliq Urdu"', 'serif'],
+        // CSS variables provided by next/font/google in i18n/fonts.ts.
+        // Each variable is only set on <html> when the locale-scoped class is
+        // applied, so non-active fonts never ship.
+        sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
+        devanagari: ['var(--font-devanagari)', '"Noto Sans Devanagari"', 'system-ui', 'sans-serif'],
+        nastaliq: ['var(--font-nastaliq)', '"Noto Nastaliq Urdu"', 'serif'],
       },
     },
   },
