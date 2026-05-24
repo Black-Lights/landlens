@@ -20,5 +20,7 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
   // Skip Next internals, API routes, static assets, and known root files.
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  // `auth` is excluded so the OAuth/magic-link callback at /auth/callback
+  // doesn't get rewritten through the next-intl locale prefix.
+  matcher: ['/((?!api|auth|_next|_vercel|.*\\..*).*)'],
 };

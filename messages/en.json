@@ -128,5 +128,75 @@
     "districtsUnavailable": "Districts not available for {state}",
     "districtsFailed": "Districts request failed for {state}",
     "parcelFetchFailed": "Failed ({status})"
+  },
+  "Auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signedInAs": "Signed in as",
+    "savedParcels": "Saved parcels",
+    "settings": "Settings",
+    "accountMenuAria": "Account menu",
+    "dialogAria": "Sign in to LandLens",
+    "closeAria": "Close sign-in dialog",
+    "title": "Sign in to LandLens",
+    "subtitle": "We'll email you a one-time sign-in link. No password needed.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "sendMagicLink": "Send magic link",
+    "continueWithGoogle": "Continue with Google",
+    "or": "or",
+    "linkSentTitle": "Check your email",
+    "linkSentBody": "We sent a sign-in link to {email}. Open it on this device.",
+    "invalidEmail": "Enter a valid email address.",
+    "genericError": "Something went wrong. Please try again.",
+    "privacyNote": "By signing in you agree to our terms. We only ever store your email — never your location."
+  },
+  "Saved": {
+    "title": "Saved parcels",
+    "subtitle": "Your bookmarked plots, ready to revisit.",
+    "empty": "You haven't saved any parcels yet. Tap the heart on any parcel sidebar to bookmark it.",
+    "openOnMap": "Open on map",
+    "remove": "Remove",
+    "removeAria": "Remove {label} from saved",
+    "savedOn": "Saved {date}",
+    "signInToView": "Sign in to see your saved parcels.",
+    "loading": "Loading your saved parcels…",
+    "loadFailed": "Could not load your saved parcels — please refresh."
+  },
+  "Sidebar": {
+    "saveAria": "Save this parcel",
+    "unsaveAria": "Remove from saved",
+    "saved": "Saved",
+    "save": "Save",
+    "signInToSave": "Sign in to save parcels",
+    "shareAria": "Copy a link to this parcel",
+    "shareCopied": "Link copied",
+    "download": "Download",
+    "downloadAria": "Download this parcel",
+    "exportGeoJson": "GeoJSON",
+    "exportKml": "KML (Google Earth)",
+    "exportPdf": "PDF report",
+    "exportFailed": "Export failed — please try again."
+  },
+  "Settings": {
+    "title": "Settings",
+    "subtitle": "Account preferences.",
+    "comingSoon": "Settings will arrive in a future sprint. For now, sign out from the account menu in the top-right.",
+    "signInRequired": "Sign in to manage your settings."
+  },
+  "NotFound": {
+    "title": "We couldn't find that page.",
+    "subtitle": "The link may be broken, or the page may have moved.",
+    "backToMap": "Back to the map"
+  },
+  "ErrorPage": {
+    "title": "Something went wrong on our end.",
+    "subtitle": "We've logged the issue and will look into it. Try refreshing the page, or head back to the map.",
+    "tryAgain": "Try again",
+    "backToMap": "Back to the map"
+  },
+  "Site": {
+    "metaDescription": "A unified map of India's land records. Click any plot to see ownership, area, type, and history.",
+    "ogTagline": "See every inch of India's land"
   }
 }

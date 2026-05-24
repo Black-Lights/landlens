@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/components/nav/LanguageSwitcher';
+import { AuthButton } from '@/components/auth/AuthButton';
 
 function MapLoading() {
   const t = useTranslations('Common');
@@ -22,10 +23,11 @@ export default function MapClient() {
   return (
     <>
       <MapView />
-      {/* Floating top-right language switcher. Sits to the left of the
-          basemap switcher in LTR (offset by 12 + 40 + 8 = right-[60px]) and
-          on the right of it in RTL. */}
-      <div className="absolute top-3 right-[60px] z-30 pointer-events-none rtl:right-auto rtl:left-[60px]">
+      {/* Floating top-right header cluster: auth button + language switcher.
+          Sits inset of the basemap switcher (which lives at right-3). In RTL
+          the cluster flips to the left edge automatically. */}
+      <div className="absolute top-3 right-[60px] z-30 flex items-center gap-2 rtl:right-auto rtl:left-[60px] rtl:flex-row-reverse">
+        <AuthButton />
         <LanguageSwitcher />
       </div>
     </>
