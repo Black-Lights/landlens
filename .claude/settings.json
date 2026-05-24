@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:polyformproject.org)",
+      "Bash(curl -fsSL \"https://polyformproject.org/wp-content/uploads/2020/05/PolyForm-Noncommercial-1.0.0.txt\" -o c:/tmp/polyform-nc.txt)",
+      "Bash(curl -fsSL \"https://polyformproject.org/licenses/noncommercial/1.0.0/\" -o c:/tmp/polyform.html)",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/polyformproject/polyform-licenses/1.0.0/PolyForm-Noncommercial-1.0.0.md\" -o c:/tmp/polyform-nc.md)",
+      "Bash(git config *)",
+      "Bash(gh auth *)",
+      "Bash(npm ls *)",
+      "Bash(npx prisma *)"
+    ]
+  }
+}
