@@ -2,6 +2,12 @@ import type { StyleSpecification } from 'maplibre-gl';
 
 export type BasemapId = 'streets' | 'satellite' | 'terrain' | 'bhuvan';
 
+export type BasemapStyleOpts = {
+  maptilerKey?: string;
+  /** Optional language code passed to MapTiler. Raster basemaps ignore this. */
+  language?: string | null;
+};
+
 export type BasemapConfig = {
   id: BasemapId;
   label: string;
@@ -10,7 +16,7 @@ export type BasemapConfig = {
    * Resolves a MapLibre style object (or URL string). MapTiler vector style
    * is fetched via URL; raster basemaps are inlined.
    */
-  style: (opts: { maptilerKey?: string }) => StyleSpecification | string;
+  style: (opts: BasemapStyleOpts) => StyleSpecification | string;
   available: (opts: { maptilerKey?: string }) => boolean;
 };
 
@@ -22,8 +28,15 @@ export const basemaps: Record<BasemapId, BasemapConfig> = {
     label: 'Streets',
     attribution: '© MapTiler © OpenStreetMap contributors',
     available: ({ maptilerKey }) => Boolean(maptilerKey),
-    style: ({ maptilerKey }) =>
-      `https://api.maptiler.com/maps/streets-v2/style.json?key=${maptilerKey}`,
+    // MapTiler streets-v2 supports a `language` query param that translates
+    // every vector-tile label at request time, falling back to the local name
+    // when the tag isn't present. Only the streets basemap is multilingual —
+    // satellite labels (Stadia raster), terrain (OpenTopoMap), and Bhuvan are
+    // all raster tiles and cannot be language-switched per-request.
+    style: ({ maptilerKey, language }) => {
+      const lang = language ? `&language=${encodeURIComponent(language)}` : '';
+      return `https://api.maptiler.com/maps/streets-v2/style.json?key=${maptilerKey}${lang}`;
+    },
   },
   satellite: {
     id: 'satellite',

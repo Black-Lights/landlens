@@ -31,7 +31,8 @@ import { LocateMe } from './LocateMe';
 import { ParcelSidebar } from './ParcelSidebar';
 import { SearchPalette } from './SearchPalette';
 import { Search } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { maptilerLanguage, type Locale } from '@/i18n/config';
 import type { SearchResult } from '@/app/api/search/route';
 
 // ── Layer / source ids ───────────────────────────────────────────────────────
@@ -92,6 +93,8 @@ export function MapView() {
   const tBread = useTranslations('Breadcrumb');
   const tErrors = useTranslations('Errors');
   const tSearch = useTranslations('Search');
+  const locale = useLocale() as Locale;
+  const mapLang = maptilerLanguage(locale);
   const indiaLabel = tBread('india');
 
   const mapRef = useRef<MapRef | null>(null);
@@ -117,8 +120,8 @@ export function MapView() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const mapStyle = useMemo(
-    () => basemaps[basemapId].style({ maptilerKey }),
-    [basemapId, maptilerKey],
+    () => basemaps[basemapId].style({ maptilerKey, language: mapLang }),
+    [basemapId, maptilerKey, mapLang],
   );
 
   // The list of fill layer ids that should respond to clicks at the current
