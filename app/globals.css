@@ -15,4 +15,12 @@ body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
   font-feature-settings: "kern" 1;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* MapLibre attribution polish — keep it readable on light/dark basemaps */
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
 }
