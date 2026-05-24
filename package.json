@@ -13,7 +13,9 @@
     "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "brand:generate": "tsx scripts/generate-favicons.ts"
+    "brand:generate": "tsx scripts/generate-favicons.ts",
+    "data:download-districts": "tsx scripts/download-district-boundaries.ts",
+    "data:seed-pune": "tsx scripts/generate-mock-parcels.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.0",
@@ -40,6 +42,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.9.0",
     "@types/node": "^22.19.19",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
