@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronRight, Home } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { DrillLevel } from '@/lib/map/constants';
 
 export type DrillCrumb = {
@@ -14,19 +15,28 @@ type Props = {
 };
 
 export function Breadcrumb({ trail, onJump }: Props) {
+  const t = useTranslations('Breadcrumb');
   if (trail.length === 0) return null;
 
   return (
     <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
       <nav
-        aria-label="Map location"
+        aria-label={t('ariaLabel')}
         className="pointer-events-auto flex max-w-[90vw] items-center gap-1 overflow-x-auto rounded-full bg-white/95 px-3 py-1.5 text-sm shadow-md ring-1 ring-black/5 backdrop-blur"
       >
         {trail.map((crumb, i) => {
           const isLast = i === trail.length - 1;
+          // First crumb is always India; its label is provided by the
+          // translation. Deeper crumbs come from feature properties.
+          const label = i === 0 && crumb.level === 'india' ? t('india') : crumb.label;
           return (
             <div key={`${crumb.level}-${i}`} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden />}
+              {i > 0 && (
+                <ChevronRight
+                  className="h-3.5 w-3.5 text-slate-400 rtl:-scale-x-100"
+                  aria-hidden
+                />
+              )}
               <button
                 type="button"
                 onClick={() => onJump(i)}
@@ -38,7 +48,7 @@ export function Breadcrumb({ trail, onJump }: Props) {
                 }`}
               >
                 {i === 0 && <Home className="h-3.5 w-3.5" aria-hidden />}
-                <span>{crumb.label}</span>
+                <span>{label}</span>
               </button>
             </div>
           );

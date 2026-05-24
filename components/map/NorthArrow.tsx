@@ -1,17 +1,20 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 type Props = {
   bearing: number;
   onReset: () => void;
 };
 
 export function NorthArrow({ bearing, onReset }: Props) {
+  const t = useTranslations('NorthArrow');
   return (
     <button
       type="button"
       onClick={onReset}
-      aria-label="Reset bearing to north"
-      title="Reset bearing to north"
+      aria-label={t('resetAria')}
+      title={t('resetAria')}
       className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md ring-1 ring-black/5 hover:bg-slate-50"
     >
       <svg

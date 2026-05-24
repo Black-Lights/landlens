@@ -16,6 +16,7 @@ import {
   Loader2,
   History,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { clsx } from 'clsx';
 
 import type { SearchResult } from '@/app/api/search/route';
@@ -30,12 +31,12 @@ const RECENTS_KEY = 'landlens:recentSearches';
 const RECENTS_MAX = 8;
 const TYPE_ORDER: SearchResult['type'][] = ['state', 'district', 'village', 'khasra', 'owner'];
 
-const TYPE_META: Record<SearchResult['type'], { label: string; Icon: typeof Search }> = {
-  state:    { label: 'States',     Icon: MapIcon },
-  district: { label: 'Districts',  Icon: Building2 },
-  village:  { label: 'Villages',   Icon: Trees },
-  khasra:   { label: 'Khasra Nos', Icon: Hash },
-  owner:    { label: 'Owners',     Icon: User },
+const TYPE_ICONS: Record<SearchResult['type'], typeof Search> = {
+  state: MapIcon,
+  district: Building2,
+  village: Trees,
+  khasra: Hash,
+  owner: User,
 };
 
 interface RecentEntry {
@@ -70,6 +71,7 @@ function saveRecent(entry: RecentEntry) {
 }
 
 export function SearchPalette({ open, onClose, onSelect }: Props) {
+  const t = useTranslations('Search');
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
@@ -194,9 +196,9 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
 
   // Group search results by type, preserving the overall score-DESC order
   // within each group.
-  const grouped = TYPE_ORDER.map((t) => ({
-    type: t,
-    items: results.filter((r) => r.type === t),
+  const grouped = TYPE_ORDER.map((type) => ({
+    type,
+    items: results.filter((r) => r.type === type),
   })).filter((g) => g.items.length > 0);
 
   // Build a flat index for keyboard nav. The DOM index of each item must
@@ -216,7 +218,7 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Search"
+      aria-label={t('dialogAria')}
       onKeyDown={onKeyDown}
       className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 px-4 pt-[12vh] backdrop-blur-sm"
       onClick={onClose}
@@ -232,19 +234,19 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search states, districts, villages, khasra, owners…"
+            placeholder={t('placeholder')}
             className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
             autoComplete="off"
             spellCheck={false}
           />
           {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-400" aria-hidden />}
           <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 sm:inline-block">
-            esc
+            {t('kbdEsc')}
           </kbd>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close search"
+            aria-label={t('closeAria')}
             className="-mr-1 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 sm:hidden"
           >
             <X className="h-4 w-4" />
@@ -254,7 +256,7 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
         <div ref={listRef} className="max-h-[60vh] overflow-y-auto py-1">
           {/* Empty input → recents */}
           {debounced.length === 0 && recents.length > 0 && (
-            <Section title="Recent" icon={History}>
+            <Section title={t('sections.recent')} icon={History}>
               {recents.map((r, i) => (
                 <ResultRow
                   key={`recent-${r.result.type}-${r.result.id}-${r.at}`}
@@ -263,6 +265,7 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
                   onMouseEnter={() => setActiveIdx(i)}
                   onClick={() => handleSelect(r.result)}
                   domIndex={i}
+                  typeLabel={t(`types.${r.result.type}`)}
                 />
               ))}
             </Section>
@@ -270,9 +273,10 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
 
           {debounced.length === 0 && recents.length === 0 && (
             <EmptyHint>
-              Try <em className="font-mono not-italic text-slate-700">Pune</em>,{' '}
-              <em className="font-mono not-italic text-slate-700">Maharashtra</em>, or a khasra
-              number.
+              {t('tryHintPrefix')}{' '}
+              <em className="font-mono not-italic text-slate-700">Pune</em>,{' '}
+              <em className="font-mono not-italic text-slate-700">Maharashtra</em>{' '}
+              {t('tryHintSuffix')}
             </EmptyHint>
           )}
 
@@ -294,16 +298,13 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
 
           {/* Results */}
           {debounced.length > 0 && !loading && results.length === 0 && !error && (
-            <EmptyHint>
-              No results for{' '}
-              <span className="font-medium text-slate-700">&ldquo;{debounced}&rdquo;</span>.
-            </EmptyHint>
+            <EmptyHint>{t('noResults', { query: debounced })}</EmptyHint>
           )}
 
           {grouped.map((g) => {
-            const meta = TYPE_META[g.type];
+            const Icon = TYPE_ICONS[g.type];
             return (
-              <Section key={g.type} title={meta.label} icon={meta.Icon}>
+              <Section key={g.type} title={t(`sections.${g.type}`)} icon={Icon}>
                 {g.items.map((r) => {
                   const idx = flatIndex.get(`${r.type}:${r.id}`) ?? 0;
                   return (
@@ -314,6 +315,7 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
                       onMouseEnter={() => setActiveIdx(idx)}
                       onClick={() => handleSelect(r)}
                       domIndex={idx}
+                      typeLabel={t(`types.${r.type}`)}
                     />
                   );
                 })}
@@ -324,11 +326,11 @@ export function SearchPalette({ open, onClose, onSelect }: Props) {
 
         <footer className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
           <div className="flex items-center gap-3">
-            <KbdHint k="↑↓">navigate</KbdHint>
-            <KbdHint k="↵">open</KbdHint>
-            <KbdHint k="esc">close</KbdHint>
+            <KbdHint k="↑↓">{t('kbdNavigate')}</KbdHint>
+            <KbdHint k="↵">{t('kbdOpen')}</KbdHint>
+            <KbdHint k="esc">{t('kbdClose')}</KbdHint>
           </div>
-          <span>powered by pg_trgm</span>
+          <span>{t('footerPowered')}</span>
         </footer>
       </div>
     </div>
@@ -361,14 +363,16 @@ function ResultRow({
   onMouseEnter,
   onClick,
   domIndex,
+  typeLabel,
 }: {
   result: SearchResult;
   active: boolean;
   onMouseEnter: () => void;
   onClick: () => void;
   domIndex: number;
+  typeLabel: string;
 }) {
-  const { Icon } = TYPE_META[result.type];
+  const Icon = TYPE_ICONS[result.type];
   return (
     <button
       type="button"
@@ -394,8 +398,8 @@ function ResultRow({
           <span className="block truncate text-xs text-slate-500">{result.sublabel}</span>
         )}
       </span>
-      <span className="ml-2 hidden shrink-0 text-[10px] uppercase tracking-wider text-slate-400 sm:inline">
-        {result.type}
+      <span className="ms-2 hidden shrink-0 text-[10px] uppercase tracking-wider text-slate-400 sm:inline">
+        {typeLabel}
       </span>
     </button>
   );

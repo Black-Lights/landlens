@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Crosshair, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export type LocateState =
   | { status: 'idle' }
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function LocateMe({ onLocate, onError }: Props) {
+  const t = useTranslations('LocateMe');
   const [state, setState] = useState<LocateState>({ status: 'idle' });
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,7 +39,7 @@ export function LocateMe({ onLocate, onError }: Props) {
       const next: LocateState = { status: 'unavailable', reason: 'Geolocation API not available' };
       setState(next);
       onError?.(next);
-      showToast('Location is not supported in this browser');
+      showToast(t('notSupported'));
       return;
     }
 
@@ -49,7 +51,7 @@ export function LocateMe({ onLocate, onError }: Props) {
         setState(next);
         onLocate(latitude, longitude, accuracy);
         if (accuracy > 200) {
-          showToast('Location accuracy is low — try moving to open sky');
+          showToast(t('lowAccuracy'));
         }
       },
       (err) => {
@@ -57,12 +59,12 @@ export function LocateMe({ onLocate, onError }: Props) {
           const next: LocateState = { status: 'denied' };
           setState(next);
           onError?.(next);
-          showToast('Enable location in your browser settings to use this');
+          showToast(t('permissionDenied'));
         } else {
           const next: LocateState = { status: 'unavailable', reason: err.message };
           setState(next);
           onError?.(next);
-          showToast('Could not get your location — try again');
+          showToast(t('failed'));
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -77,8 +79,8 @@ export function LocateMe({ onLocate, onError }: Props) {
         type="button"
         onClick={handleClick}
         disabled={busy}
-        aria-label="Find land around me"
-        title="Find land around me"
+        aria-label={t('buttonAria')}
+        title={t('buttonAria')}
         className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-accent text-white shadow-lg ring-1 ring-black/10 transition-colors hover:bg-accent-hover disabled:opacity-60"
       >
         {busy ? (

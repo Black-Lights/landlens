@@ -31,6 +31,7 @@ import { LocateMe } from './LocateMe';
 import { ParcelSidebar } from './ParcelSidebar';
 import { SearchPalette } from './SearchPalette';
 import { Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { SearchResult } from '@/app/api/search/route';
 
 // ── Layer / source ids ───────────────────────────────────────────────────────
@@ -88,6 +89,11 @@ const FILL_OPACITY = {
 };
 
 export function MapView() {
+  const tBread = useTranslations('Breadcrumb');
+  const tErrors = useTranslations('Errors');
+  const tSearch = useTranslations('Search');
+  const indiaLabel = tBread('india');
+
   const mapRef = useRef<MapRef | null>(null);
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
   const initialBasemap: BasemapId = maptilerKey ? defaultBasemap : 'satellite';
@@ -95,7 +101,7 @@ export function MapView() {
   const [basemapId, setBasemapId] = useState<BasemapId>(initialBasemap);
   const [hovered, setHovered] = useState<{ level: DrillLevel; key: string } | null>(null);
   const [drill, setDrill] = useState<DrillCtx>({});
-  const [trail, setTrail] = useState<DrillCrumb[]>([{ level: 'india', label: 'India' }]);
+  const [trail, setTrail] = useState<DrillCrumb[]>([{ level: 'india', label: indiaLabel }]);
   const [cursor, setCursor] = useState<{ lat: number | null; lng: number | null }>({ lat: null, lng: null });
   const [bearing, setBearing] = useState(0);
   const [gps, setGps] = useState<{ lng: number; lat: number; accuracy: number } | null>(null);
@@ -156,7 +162,7 @@ export function MapView() {
     const [w, s, e, n] = bbox(feat);
     mapRef.current?.fitBounds([[w, s], [e, n]], { padding: 60, duration: 900, maxZoom: DRILL_ZOOM.state + 0.5 });
     setDrill({ state: { name } });
-    setTrail([{ level: 'india', label: 'India' }, { level: 'state', label: name }]);
+    setTrail([{ level: 'india', label: indiaLabel }, { level: 'state', label: name }]);
     setVillagesUrl(null);
     setParcelsUrl(null);
     setDistrictsError(null);
@@ -166,17 +172,17 @@ export function MapView() {
       const res = await fetch(`/api/districts?state=${encodeURIComponent(name)}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setDistrictsError(body?.error?.message ?? `Districts not available for ${name}`);
+        setDistrictsError(body?.error?.message ?? tErrors('districtsUnavailable', { state: name }));
         setDistrictsUrl(null);
         return;
       }
       // Use the URL directly so MapLibre fetches it (browser cache benefits).
       setDistrictsUrl(`/api/districts?state=${encodeURIComponent(name)}`);
     } catch {
-      setDistrictsError(`Districts request failed for ${name}`);
+      setDistrictsError(tErrors('districtsFailed', { state: name }));
       setDistrictsUrl(null);
     }
-  }, []);
+  }, [indiaLabel, tErrors]);
 
   const drillIntoDistrict = useCallback(async (feat: Feature<Geometry, DistrictProps>) => {
     const name = districtName(feat);
@@ -184,7 +190,12 @@ export function MapView() {
     const [w, s, e, n] = bbox(feat);
     mapRef.current?.fitBounds([[w, s], [e, n]], { padding: 60, duration: 900, maxZoom: DRILL_ZOOM.district + 0.5 });
     setDrill((prev) => ({ ...prev, district: { name, lgd } }));
-    setTrail((prev) => [...prev.filter((c) => c.level === 'india' || c.level === 'state'), { level: 'district', label: name }]);
+    setTrail((prev) => {
+      const next = prev.filter((c) => c.level === 'india' || c.level === 'state');
+      // Ensure the India crumb is the translated label.
+      if (next[0]?.level === 'india') next[0] = { level: 'india', label: indiaLabel };
+      return [...next, { level: 'district', label: name }];
+    });
     setParcelsUrl(null);
 
     // Ask the API for villages in this district's bbox. If the DB has cached
@@ -192,7 +203,7 @@ export function MapView() {
     // into. Otherwise Overpass fetches live and the result has osm_id only.
     const bboxStr = `${w},${s},${e},${n}`;
     setVillagesUrl(`/api/villages?bbox=${encodeURIComponent(bboxStr)}`);
-  }, []);
+  }, [indiaLabel]);
 
   const drillIntoVillage = useCallback(async (feat: Feature<Geometry, VillageProps>) => {
     const id = feat.properties?.id;
@@ -242,7 +253,7 @@ export function MapView() {
     if (!target) return;
     if (target.level === 'india') {
       mapRef.current?.flyTo({ center: INDIA_CENTER, zoom: INDIA_DEFAULT_ZOOM, bearing: 0, pitch: 0, duration: 900 });
-      setTrail([{ level: 'india', label: 'India' }]);
+      setTrail([{ level: 'india', label: indiaLabel }]);
       setDrill({});
       setDistrictsUrl(null);
       setVillagesUrl(null);
@@ -263,7 +274,7 @@ export function MapView() {
       setDrill((d) => ({ state: d.state, district: d.district }));
       return;
     }
-  }, [trail]);
+  }, [trail, indiaLabel]);
 
   // ── Locate me + nearby glow ─────────────────────────────────────────────
   const onLocate = useCallback((lat: number, lng: number, accuracy: number) => {
@@ -299,20 +310,20 @@ export function MapView() {
         );
       }
       setDrill({ state: { name } });
-      setTrail([{ level: 'india', label: 'India' }, { level: 'state', label: name }]);
+      setTrail([{ level: 'india', label: indiaLabel }, { level: 'state', label: name }]);
       setVillagesUrl(null);
       setParcelsUrl(null);
       try {
         const res = await fetch(`/api/districts?state=${encodeURIComponent(name)}`);
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          setDistrictsError(body?.error?.message ?? `Districts not available for ${name}`);
+          setDistrictsError(body?.error?.message ?? tErrors('districtsUnavailable', { state: name }));
           setDistrictsUrl(null);
         } else {
           setDistrictsUrl(`/api/districts?state=${encodeURIComponent(name)}`);
         }
       } catch {
-        setDistrictsError(`Districts request failed for ${name}`);
+        setDistrictsError(tErrors('districtsFailed', { state: name }));
         setDistrictsUrl(null);
       }
       return;
@@ -328,7 +339,7 @@ export function MapView() {
         );
       }
       setDrill({ state: stateName ? { name: stateName } : undefined, district: { name: districtName } });
-      const crumbs: DrillCrumb[] = [{ level: 'india', label: 'India' }];
+      const crumbs: DrillCrumb[] = [{ level: 'india', label: indiaLabel }];
       if (stateName) crumbs.push({ level: 'state', label: stateName });
       crumbs.push({ level: 'district', label: districtName });
       setTrail(crumbs);
@@ -365,7 +376,7 @@ export function MapView() {
         district: districtName ? { name: districtName } : undefined,
         village: { id: r.id, name: villageName },
       });
-      const crumbs: DrillCrumb[] = [{ level: 'india', label: 'India' }];
+      const crumbs: DrillCrumb[] = [{ level: 'india', label: indiaLabel }];
       if (stateName) crumbs.push({ level: 'state', label: stateName });
       if (districtName) crumbs.push({ level: 'district', label: districtName });
       crumbs.push({ level: 'village', label: villageName });
@@ -407,7 +418,7 @@ export function MapView() {
         district: districtName ? { name: districtName } : undefined,
         village: villageId && villageName ? { id: villageId, name: villageName } : undefined,
       });
-      const crumbs: DrillCrumb[] = [{ level: 'india', label: 'India' }];
+      const crumbs: DrillCrumb[] = [{ level: 'india', label: indiaLabel }];
       if (stateName) crumbs.push({ level: 'state', label: stateName });
       if (districtName) crumbs.push({ level: 'district', label: districtName });
       if (villageName) crumbs.push({ level: 'village', label: villageName });
@@ -425,7 +436,7 @@ export function MapView() {
       }
       if (r.parcel_id) setSelectedParcel(r.parcel_id);
     }
-  }, []);
+  }, [indiaLabel, tErrors]);
 
   // Cmd/Ctrl+K opens search. Ignore when the user is typing in another input.
   useEffect(() => {
@@ -641,12 +652,12 @@ export function MapView() {
       <button
         type="button"
         onClick={() => setSearchOpen(true)}
-        aria-label="Open search (Ctrl+K)"
-        title="Search (Ctrl+K)"
-        className="pointer-events-auto absolute left-3 top-14 z-20 flex h-10 items-center gap-2 rounded-full bg-white/95 pl-3 pr-3.5 text-sm text-slate-600 shadow-md ring-1 ring-black/10 hover:bg-white hover:text-slate-900 md:pr-4"
+        aria-label={tSearch('buttonAria')}
+        title={tSearch('buttonTitle')}
+        className="pointer-events-auto absolute left-3 top-14 z-20 flex h-10 items-center gap-2 rounded-full bg-white/95 ps-3 pe-3.5 text-sm text-slate-600 shadow-md ring-1 ring-black/10 hover:bg-white hover:text-slate-900 md:pe-4"
       >
         <Search className="h-4 w-4" aria-hidden />
-        <span className="hidden sm:inline">Search…</span>
+        <span className="hidden sm:inline">{tSearch('buttonLabel')}</span>
         <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 md:inline-block">
           ⌘K
         </kbd>

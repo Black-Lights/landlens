@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Layers, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { basemapOrder, basemaps, type BasemapId } from '@/lib/map/basemaps';
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export function BasemapSwitcher({ value, onChange, maptilerKey }: Props) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations('Basemap');
 
   return (
     <div className="absolute right-3 top-3 z-20 pointer-events-auto">
@@ -20,7 +22,7 @@ export function BasemapSwitcher({ value, onChange, maptilerKey }: Props) {
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          aria-label="Change basemap"
+          aria-label={t('buttonAria')}
           className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-slate-700 shadow-md ring-1 ring-black/5 hover:bg-slate-50"
         >
           <Layers className="h-5 w-5" />
@@ -50,7 +52,7 @@ export function BasemapSwitcher({ value, onChange, maptilerKey }: Props) {
                     isActive ? 'bg-accent/10 text-accent' : 'text-slate-700 hover:bg-slate-50'
                   } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
-                  <span>{b.label}</span>
+                  <span>{t(id)}</span>
                   {isActive && <Check className="h-4 w-4" />}
                 </button>
               );
