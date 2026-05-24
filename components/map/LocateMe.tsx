@@ -90,7 +90,7 @@ export function LocateMe({ onLocate, onError }: Props) {
       {toast && (
         <div
           role="status"
-          className="pointer-events-auto absolute bottom-20 left-1/2 z-30 max-w-[85vw] -translate-x-1/2 rounded-md bg-slate-900/90 px-3 py-2 text-center text-xs text-white shadow-lg"
+          className="pointer-events-auto fixed bottom-32 left-1/2 z-50 max-w-[85vw] -translate-x-1/2 rounded-md bg-slate-900/90 px-3 py-2 text-center text-xs text-white shadow-lg"
         >
           {toast}
         </div>

@@ -246,7 +246,10 @@ export function MapView() {
         <CoordReadout lat={cursor.lat} lng={cursor.lng} />
       </div>
 
-      <div className="pointer-events-none absolute bottom-24 right-3 z-20 sm:bottom-16">
+      {/* Bottom-right, sits 96px above the viewport edge — clears MapLibre's
+          NavigationControl (~60px stack) on every breakpoint and lands in
+          the mobile thumb zone. */}
+      <div className="pointer-events-none absolute bottom-24 right-4 z-20">
         <LocateMe onLocate={onLocate} />
       </div>
     </div>

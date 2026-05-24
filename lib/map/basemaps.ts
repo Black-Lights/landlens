@@ -28,7 +28,9 @@ export const basemaps: Record<BasemapId, BasemapConfig> = {
   satellite: {
     id: 'satellite',
     label: 'Satellite',
-    attribution: 'Source: Esri, Maxar, Earthstar Geographics',
+    attribution:
+      'Source: Esri, Maxar, Earthstar Geographics · Labels © Stadia Maps © Stamen Design ' +
+      OSM_ATTRIBUTION,
     available: () => true,
     style: () => ({
       version: 8,
@@ -42,12 +44,31 @@ export const basemaps: Record<BasemapId, BasemapConfig> = {
           maxzoom: 19,
           attribution: 'Source: Esri, Maxar, Earthstar Geographics',
         },
+        // Stamen Toner Labels via Stadia Maps — transparent label-only raster
+        // layered on top of Esri imagery so cities, roads and admin names are
+        // legible. Stadia serves these without an API key from referrer-locked
+        // origins; production uses Vercel's host, dev uses localhost.
+        'stadia-labels': {
+          type: 'raster',
+          tiles: [
+            'https://tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}.png',
+          ],
+          tileSize: 256,
+          maxzoom: 18,
+          attribution: '© Stadia Maps © Stamen Design ' + OSM_ATTRIBUTION,
+        },
       },
       layers: [
         {
           id: 'esri-imagery-layer',
           type: 'raster',
           source: 'esri-imagery',
+        },
+        {
+          id: 'stadia-labels-layer',
+          type: 'raster',
+          source: 'stadia-labels',
+          paint: { 'raster-opacity': 0.9 },
         },
       ],
     }),
@@ -87,13 +108,17 @@ export const basemaps: Record<BasemapId, BasemapConfig> = {
     label: 'Bhuvan',
     attribution: '© Bhuvan / NRSC / ISRO',
     available: () => true,
+    // ISRO's public WMS, served as a raster source. `india3` is the public
+    // basemap layer; if it ever stops serving, swap to `lulc50k_1112` (the
+    // land-use/land-cover 1:50k mosaic) as a fallback. We hit the `vec2` host
+    // since `vec1` returns 5xx for some BBOX requests in mid-2026.
     style: () => ({
       version: 8,
       sources: {
         bhuvan: {
           type: 'raster',
           tiles: [
-            'https://bhuvan-vec1.nrsc.gov.in/bhuvan/wms?service=WMS&request=GetMap&version=1.1.1&layers=india3&styles=&format=image/png&transparent=false&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}',
+            'https://bhuvan-vec2.nrsc.gov.in/bhuvan/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=india3&STYLES=&FORMAT=image/png&TRANSPARENT=true&SRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}',
           ],
           tileSize: 256,
           attribution: '© Bhuvan / NRSC / ISRO',
