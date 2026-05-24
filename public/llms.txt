@@ -1,0 +1,33 @@
+# LandLens
+> Pan-India cadastral land records platform. Click any plot to see ownership, area, type, and history. Unifies records from 28+ state portals.
+
+## Core concepts
+- **Parcel** — a land plot with a polygon, area, classification, and ownership records.
+- **Khasra** — traditional state-level plot number.
+- **ULPIN** — 14-digit national unique ID (Bhu-Aadhaar), being rolled out across India.
+- **Boundary source tiers** — every polygon carries provenance: govt_bhunaksha (Tier 1, authoritative) → fmb_reconstructed → ai_with_constraints → osm → ai_only (Tier 5, needs verification).
+
+## Machine-readable endpoints
+- /api/openapi.json — full OpenAPI 3.1 spec (auto-generated from Zod schemas)
+- /api/health — liveness + dependency health
+- /api/parcels/{id} — single parcel (Sprint 3)
+- /api/parcels/at?lat=X&lng=Y — point-in-polygon lookup (Sprint 3)
+- /api/parcels/nearby?lat=X&lng=Y&radius_m=500 — radius search, geography-based (Sprint 3)
+
+## Conventions
+- All responses are JSON with an envelope `{ data, meta }` on success and `{ error: { code, message, suggested_action, docs_url } }` on failure.
+- Mutations accept an `Idempotency-Key` header (UUID v4 recommended). Retries with the same key within 24h replay the stored response.
+- Locale-prefixed URLs: /en/..., /hi/..., /ur/... — Urdu renders RTL.
+
+## For AI agents
+- MCP server: mcp.land.trenlens.com (Sprint 12 — not yet live)
+- In-app BYOK admin assistant: /admin/assistant (Sprint 13 — not yet live)
+- Rate limit: 60 req/min/IP for public; 600 req/min/user for authenticated.
+
+## Documentation
+- Human: /docs
+- Machine: /api/openapi.json
+- Source: https://github.com/Black-Lights/landlens
+
+## License
+PolyForm Noncommercial 1.0.0 (Phase 1). Commercial dual-license planned for Phase 2.

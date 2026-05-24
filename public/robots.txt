@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# AI agents — see /llms.txt for a machine-readable description of the site.
+Sitemap: https://land.trenlens.com/sitemap.xml
