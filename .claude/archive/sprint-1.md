@@ -1,0 +1,243 @@
+## Sprint 1 — Foundation + AI-friendliness baseline (completed 2026-05-24)
+
+### What was built
+
+**Repo + git**
+- `git init -b main`, identity set to `Black-Lights <mohammadammar.mughees@mail.polimi.it>`
+- Remote `origin` → `https://github.com/Black-Lights/landlens.git`
+- GitHub repo description + homepage (`land.trenlens.com`) + topics (cadastre, gis, india, postgis, nextjs, maplibre, land-records, geospatial) set via `gh repo edit`
+- Eight commits authored under `sprint-1:` prefix following the format from `.claude/CLAUDE.md`
+
+**Next.js scaffold**
+- Next.js 14.2.35 (security-patched), TypeScript strict, Tailwind, App Router, no `src/`
+- Path alias `@/*` → repo root
+- Tailwind extended with LandLens accent (#4F46E5) and three font families (Inter, Noto Sans Devanagari, Noto Nastaliq Urdu)
+- Build verified locally: 7 routes prerendered, `/api/health` dynamic, `/api/openapi.json` static, middleware emits 38.1 kB bundle
+
+**Dependencies installed** (locked in `package.json` + `package-lock.json`)
+- `next 14.2.35`, `react 18.3`, `prisma 5.22`, `@prisma/client 5.22`
+- `@supabase/supabase-js 2.46`, `@supabase/ssr 0.5`
+- `@upstash/redis 1.34`, `@upstash/ratelimit 2.0`
+- `maplibre-gl 4.7`, `react-map-gl 7.1`, `@turf/turf 7.1`
+- `next-intl 3.26`
+- `zod 3.23`, `@asteasolutions/zod-to-openapi 7.3`
+- `ai 4.0`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@ai-sdk/google`
+- `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`
+
+**next-intl locale routing**
+- `i18n/config.ts` declares `en` (default), `hi`, `ur` with `isRtl(ur) = true`
+- `i18n/request.ts` uses the v3.22+ `requestLocale` API
+- `middleware.ts` routes `/`, `/en`, `/hi`, `/ur` (always-prefix); matcher excludes `/api`, `_next`, `_vercel`, static files
+- `app/[locale]/layout.tsx` sets `<html lang dir>` from locale and calls `setRequestLocale` for static rendering
+- `messages/{en,hi,ur}.json` are minimal stubs — real catalogs ship in Sprint 5 per scope
+
+**Prisma schema** (`prisma/schema.prisma`)
+- Full schema from `docs/02-database-schema.md`: `admin_boundaries`, `parcels` (with all boundary_source provenance columns), `parcel_corrections`, `ownership_records`, `encumbrances`, `saved_parcels`, `access_log`
+- BYOK / AI-first tables: `admin_api_keys`, `admin_assistant_conversations`, `admin_assistant_messages`
+- Commercial scaffolding: `api_keys`, `api_usage` (tier defaults `community`, features off)
+- Geometry columns declared `Unsupported(...)` — spatial reads go via `$queryRaw`
+- `extensions = [postgis, pg_trgm, pgsodium, uuidOssp]` declared
+- `directUrl = env("DIRECT_URL")` so migrations bypass PgBouncer
+- Generated columns, CHECK constraints, GIST/GIN indexes, partial indexes live in `prisma/sql/post-init.sql` (Prisma can't manage them) — runs once in Supabase SQL editor
+
+**Service clients**
+- `lib/db.ts` — Prisma singleton, hot-reload safe
+- `lib/supabase.ts` — `supabaseAnon()` and `supabaseAdmin()` factories
+- `lib/redis.ts` — returns `null` when env unset so health probes degrade rather than throw
+
+**AI-first foundations** (mandatory from Sprint 1)
+- `lib/api/errors.ts` — `ApiError` class with 12 stable codes (`PARCEL_NOT_FOUND`, `VALIDATION_FAILED`, `IDEMPOTENCY_KEY_REUSED`, …) and `withErrors()` wrapper. Failures return `{ error: { code, message, suggested_action, docs_url } }`. ZodError gets auto-translated to `VALIDATION_FAILED`.
+- `lib/api/idempotency.ts` — `Idempotency-Key` header on POST/PUT/PATCH/DELETE. Hashes `(method+path+key)` into Redis with 24h TTL, replays stored response on retry, rejects key reuse with divergent payload. Degrades to pass-through when Upstash is unconfigured.
+- `lib/api/openapi.ts` — `zod-to-openapi` registry. Routes register their schemas; `generateOpenApiDocument()` emits OpenAPI 3.1 tagged with PolyForm-NC license.
+- `app/api/openapi.json/route.ts` — serves the spec, edge-cached 5 min, SWR 24h
+- `public/llms.txt` — site description for AI agents (concepts, endpoints, conventions, license, source repo)
+- `public/robots.txt` — allow `/`, disallow `/api/`, points humans to `/llms.txt`
+
+**API routes**
+- `GET /api/health` — `{ status, db, redis, version, timestamp }`. Each dependency reports `ok` / `down` / `unconfigured` independently; overall status is `ok` only when all are `ok`.
+- `GET /api/openapi.json` — auto-generated spec (already covered above)
+
+**Brand assets** (added late in Sprint 1 alongside the foundations)
+- `public/brand/logo.svg` — full lockup (icon + wordmark). Strokes use `currentColor` so the wordmark inherits the parent's text color.
+- `public/brand/icon.svg` — square icon-only, also `currentColor`.
+- `public/brand/app-icon.svg` — 512×512 solid-indigo background with white strokes. Source for PWA / app store icons and raster outputs.
+- `public/favicon.svg` — small-size optimized icon with fixed colors (slate-900 strokes, indigo highlight).
+- `public/favicon.ico` — multi-resolution (16/32/48) generated from `app-icon.svg` via `scripts/generate-favicons.ts`.
+- `public/apple-touch-icon.png` — 180×180 iOS home-screen icon, generated from the same script.
+- `public/brand/og-image.png` — 1200×630 social preview, generated by compositing `logo.svg` centered on a white canvas.
+- `scripts/generate-favicons.ts` — `sharp` + `png-to-ico` regen pipeline. Wired as `npm run brand:generate`. Devdeps added: `sharp`, `png-to-ico`, `tsx`.
+- `components/nav/Logo.tsx` — inline-SVG React component with `variant` (`full` | `icon`) and `theme` (`light` | `dark` | `auto`) props. `auto` uses Tailwind `dark:` to follow the system color scheme.
+- `app/layout.tsx` — Metadata API wired with `icons` (favicon.svg + favicon.ico + apple-touch-icon), `openGraph`, `twitter:summary_large_image`, and a templated `<title>` (`%s · LandLens`). `metadataBase` reads `NEXT_PUBLIC_SITE_URL`.
+- `docs/16-brand-guidelines.md` — plain-language explainer of the mark, palette, do's and don'ts; matches the style of existing docs.
+- `docs/README.md` — index updated with the new doc row.
+- `README.md` — replaced the earlier scaffold-only version with the branded README (centered logo, three shields-io badges, links to docs/SECURITY).
+- `SECURITY.md` — disclosure policy with `mohammadammar.mughees@mail.polimi.it` as the contact (the user supplied this email directly; no placeholder remains in the file).
+
+**Documentation**
+- `.env.example` — every env var from CLAUDE_CODE_PROMPT §17 plus `DIRECT_URL` (for migrations) and `CRON_SECRET`. Commercial flags default `false`.
+
+### Decisions taken this sprint
+- **Bumped Next.js to 14.2.35** (from the originally-pinned 14.2.18) — npm flagged 14.2.18 for a security advisory ([security update 2025-12-11](https://nextjs.org/blog/security-update-2025-12-11)). Staying within 14.2.x to avoid a major framework jump in Sprint 1.
+- **Prisma uses `Unsupported(...)` for all geometry columns.** Spatial work goes through `db.$queryRaw\`...\`` with bound parameters. Documented in the schema comments and in `docs/02-database-schema.md`. No JS-side geometry helpers in Sprint 1 — those land with the first real spatial query in Sprint 2.
+- **next-intl `setRequestLocale` adopted** so locale pages prerender statically. Without it the build errored on `headers()` opt-out. This is the documented next-intl pattern for App Router + static rendering.
+- **Health check separates `down` from `unconfigured`.** In local dev a missing `DATABASE_URL` should not look the same as a Supabase outage.
+- **Idempotency middleware is a no-op when Redis is missing.** Production deploys must set `UPSTASH_REDIS_REST_URL` — this is called out in `.env.example` and the README quick start.
+- **`directUrl` added to Prisma datasource.** `DATABASE_URL` will use the pooled (PgBouncer, port 6543) Supabase URL; `DIRECT_URL` uses port 5432 for migrations. Critical for `prisma migrate dev` to work.
+
+### Env vars the user must fill before `npm run dev` works against real data
+Open `.env.example` and copy to `.env.local`. The following need real values:
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — Supabase project → Settings → API
+- `DATABASE_URL` (pooled, port 6543) and `DIRECT_URL` (direct, port 5432) — Supabase project → Settings → Database → Connection string
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — Upstash console → REST API tab
+- `NEXT_PUBLIC_MAPTILER_KEY` — optional, only needed once Sprint 2 lands
+
+The rest (segmentation, MCP, Vault, cron) stay empty during Phase 1.
+
+### Manual steps the user still needs to do
+The session covers everything codeable. Three manual steps remain:
+
+**1. Create the Supabase project**
+- Go to <https://supabase.com> → New project
+- Choose region near India (Singapore / Mumbai)
+- Save the password
+- Settings → API: copy `URL`, `anon key`, `service_role key` into `.env.local`
+- Settings → Database → Connection pooling: copy the *pooled* string into `DATABASE_URL`
+- Settings → Database → Connection string: copy the *direct* string into `DIRECT_URL`
+- SQL Editor → run once:
+  ```sql
+  CREATE EXTENSION IF NOT EXISTS postgis;
+  CREATE EXTENSION IF NOT EXISTS pg_trgm;
+  CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+  CREATE EXTENSION IF NOT EXISTS pgsodium;
+  ```
+- Locally: `npx prisma migrate dev --name init`
+- SQL Editor → run `prisma/sql/post-init.sql` (paste contents) to add GIST/GIN indexes, generated columns, CHECK constraints Prisma can't manage
+
+**2. Create the Upstash Redis database**
+- Go to <https://upstash.com> → Create database → Region near India
+- REST API tab → copy URL and token into `.env.local`
+
+**3. Deploy to Vercel + wire Cloudflare DNS**
+- Push to GitHub (this session already wired the remote; the next session can `git push -u origin main` once you confirm credentials)
+- <https://vercel.com> → Add New Project → Import `Black-Lights/landlens`
+- Framework auto-detects Next.js
+- Environment Variables: paste every key from `.env.local` for Production, Preview, and Development environments
+- Click Deploy — the auto-generated `*.vercel.app` URL should work
+- Vercel → Project → Settings → Domains → Add `land.trenlens.com`
+- Cloudflare DNS for `trenlens.com`:
+  - Type: `CNAME`
+  - Name: `land`
+  - Target: `cname.vercel-dns.com`
+  - Proxy: **DNS only (gray cloud, NOT orange)** — Vercel needs to terminate TLS itself
+  - TTL: Auto
+- Wait ~1 minute, Vercel issues the SSL cert automatically
+
+After all three, visit `https://land.trenlens.com/api/health` — it should return `{ status: "ok", db: "ok", redis: "ok", … }`.
+
+### What was deferred (per scope, not skipped accidentally)
+- Map rendering, basemap switcher, layer panel → Sprint 2
+- Parcel data seeding (`turf.js` voronoi mock parcels, datameet boundary ingest, faker owners) → Sprint 3
+- Real i18n catalogs (all UI strings translated to en/hi/ur with RTL polish) → Sprint 5; folder structure + locale routing are ready
+- Supabase Auth wiring, OTP login, saved parcels → Sprint 6
+- MCP server (`packages/landlens-mcp`) → Sprint 12
+- BYOK admin assistant at `/admin/assistant` → Sprint 13
+- Rate-limit middleware wiring on every route → Sprint 14 (the deps are installed, but the actual `@upstash/ratelimit` wrapper isn't bound to handlers yet)
+
+### Files added this sprint
+```
+.env.example
+.eslintrc.json
+.gitignore
+README.md
+SECURITY.md
+app/
+  globals.css
+  layout.tsx
+  [locale]/
+    layout.tsx
+    page.tsx
+  api/
+    health/route.ts
+    openapi.json/route.ts
+components/
+  nav/Logo.tsx
+docs/
+  16-brand-guidelines.md
+i18n/
+  config.ts
+  request.ts
+lib/
+  db.ts
+  redis.ts
+  supabase.ts
+  api/
+    errors.ts
+    idempotency.ts
+    openapi.ts
+messages/
+  en.json
+  hi.json
+  ur.json
+middleware.ts
+next.config.mjs
+package.json
+package-lock.json
+postcss.config.js
+prisma/
+  schema.prisma
+  sql/post-init.sql
+public/
+  apple-touch-icon.png
+  favicon.ico
+  favicon.svg
+  llms.txt
+  robots.txt
+  brand/
+    app-icon.svg
+    icon.svg
+    logo.svg
+    og-image.png
+scripts/
+  generate-favicons.ts
+tailwind.config.ts
+tsconfig.json
+```
+
+### Prompt for the next session (Sprint 2 — Map)
+> Read .claude/SESSION_LOG.md first so you understand what Sprint 1 already shipped. Then begin Sprint 2 — Map.
+> Scope: MapLibre GL integration, India state boundaries as vector tiles, hierarchical drill-down zoom (state → district → tehsil → village), BasemapSwitcher (MapTiler streets default, Esri World Imagery satellite, OpenTopoMap terrain, Bhuvan WMS optional), AttributionFooter that swaps strings on basemap change, Breadcrumb, ScaleBar, CoordinateReadout, ZoomControls, "Locate me" button with the GPS feature spec from CLAUDE_CODE_PROMPT §4. Do NOT seed parcels yet — that's Sprint 3.
+> Before doing anything, confirm the user has the Supabase + Upstash env vars filled and `prisma migrate dev` + `prisma/sql/post-init.sql` have been run. The site should boot locally on `npm run dev` and `/api/health` should return `db: 'ok'`.
+
+### Sprint 1 close-out (2026-05-24, end of session)
+
+Sprint 1 is **complete and live in production**.
+
+**Verification snapshots**
+- Local: `GET http://localhost:3000/api/health` → `{ status: "ok", db: "ok", redis: "ok" }`
+- Production: `GET https://land.trenlens.com/api/health` → `{ status: "ok", db: "ok", redis: "ok", version: "aa1239b" }`
+
+The `version` field on the production response is the short commit SHA from `VERCEL_GIT_COMMIT_SHA` — matches `aa1239b` (the initial Prisma migration commit), confirming the deployed build is exactly the code on `main`.
+
+**Manual steps completed outside Claude Code during this session**
+- Supabase project `landlens` created in Mumbai (`ap-south-1`), Postgres 17.6 on `t4g.nano`, extensions enabled (postgis 3.3.7, pg_trgm 1.6, uuid-ossp 1.1, pgsodium 3.1.8). Pooler hostname turned out to be `aws-1-ap-south-1.pooler.supabase.com` (not `aws-0-`); `.env.local` updated accordingly.
+- Upstash Redis database created in Mumbai (free tier): `capital-glider-135285.upstash.io`. URL + token added to `.env.local` and to Vercel env vars.
+- MapTiler API key added to `.env.local` and Vercel — `NEXT_PUBLIC_MAPTILER_KEY` is now populated so Sprint 2 can use it directly.
+- Vercel project imported from `Black-Lights/landlens`, all env vars from `.env.local` propagated to Production / Preview / Development environments.
+- Domain `land.trenlens.com` configured via Cloudflare's Vercel auto-configure flow — CNAME `land → cname.vercel-dns.com` (DNS-only, gray cloud) plus the TXT verification record. TLS auto-issued by Vercel.
+
+**What is NOT done yet** (and is correctly scoped to later sprints)
+- Map rendering (Sprint 2)
+- Parcel data seeding — turf voronoi mocks, datameet boundary ingest, faker owners (Sprint 3)
+- Search / command palette (Sprint 4)
+- Real i18n catalogs — the folder structure + locale routing are ready, but the JSON files are stubs (Sprint 5)
+- Supabase Auth wiring, OTP login, saved-parcel bookmarks (Sprint 6)
+- Real state-portal scrapers (Sprint 7)
+- AI segmentation service integration (Sprint 9)
+- MCP server + in-app admin assistant (Sprints 12 / 13)
+- Rate-limit middleware on every API route (Sprint 14) — `@upstash/ratelimit` is installed but not yet wrapped around handlers
+
+**Live URL:** <https://land.trenlens.com>
+
+**Repo:** <https://github.com/Black-Lights/landlens>
+
+Sprint 2 prompt is above and ready to use verbatim in the next session.

@@ -36,13 +36,13 @@ A separate repo `landlens-segmentation/` (Python + FastAPI + PyTorch) handles AI
 
 ## Read these first, in this order:
 
-1. `.claude/SESSION_LOG.md` — what's already been done across past sessions. **Read this before doing ANYTHING else.** Do not redo completed work.
+1. `.claude/CURRENT_STATE.md` first. It's small and tells you everything you need. Only read `.claude/archive/sprint-N.md` if a specific past decision needs verification.
 2. `CLAUDE_CODE_PROMPT.md` — the full project spec
 3. `docs/README.md` — the documentation index, then read the docs relevant to the current sprint
 
 ## Working rules
 
-- **Update `SESSION_LOG.md` at the end of every session.** Append a new section under the current sprint heading describing what you built, decisions made, and what's not yet done. Never delete past entries.
+- **Update `CURRENT_STATE.md` at the end of every session** with current status. Describe what you built, decisions made, and what's not yet done.
 - Match the style of existing docs (plain-language opener → tables → "What's Next" footer).
 - Stay within scope of the current sprint. If something seems out of scope, note it in the session log under "Deferred to later sprint" instead of building it.
 - When unsure about a design choice, check the prompt and existing docs first. Ask the user only if it's not specified anywhere.
@@ -56,7 +56,6 @@ A separate repo `landlens-segmentation/` (Python + FastAPI + PyTorch) handles AI
 
 ## When session ends
 
-- Update `SESSION_LOG.md` with everything completed
-- When updating SESSION_LOG.md, ONLY append new sections at the bottom. NEVER edit, rewrite, or delete existing sprint sections.
+- Update `CURRENT_STATE.md` with current status. When a sprint closes, create a new `archive/sprint-N.md` with full detail and update `CURRENT_STATE.md` to reflect closed status and bump the next-sprint prompt.
 - Note any partial work or open questions
 - Suggest the prompt for the next session if work spans sprints
