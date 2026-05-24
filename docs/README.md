@@ -40,6 +40,7 @@ Read in order if you're new. Skip around if you know what you're looking for.
 | 13 | [Admin Assistant](./13-admin-assistant.md) | In-app BYOK chat for admins |
 | 14 | [Licensing & Commercial](./14-licensing.md) | PolyForm now → commercial later |
 | 15 | [Enterprise Tier](./15-enterprise-tier.md) | The paid offering, when it ships |
+| 16 | [Brand Guidelines](./16-brand-guidelines.md) | The mark, palette, and how to use the brand assets in `public/brand/` |
 
 ## Two repositories
 
