@@ -381,4 +381,28 @@ Modified: `app/[locale]/page.tsx`, `app/globals.css`.
 > Scope: ingest datameet district shapefiles into the `admin_boundaries` table (or convert to GeoJSON and serve as a static asset, matching the Sprint 2 pattern); seed mock parcels using `@turf/turf` voronoi over sample centroids per state; faker-generated owner names into `ownership_records`; click-a-parcel sidebar (desktop) + bottom sheet (mobile); `/api/parcels/:id` and `/api/parcels/nearby` (the latter wires into the Sprint 2 "Locate me" path); extend the breadcrumb click drill-down through district → tehsil → village now that data exists.
 > Before doing anything, confirm `npm run dev` boots and the homepage shows the India map.
 
+### Sprint 2 polish + close-out (2026-05-24)
+
+Three post-deploy fixes shipped in one commit (`sprint-2: fix satellite labels, bhuvan wms, locate-me position`) plus the earlier favicon contrast fix.
+
+**1. Satellite view has labels now.** Esri World Imagery is raster-only — no place names, no roads. The `satellite` basemap style in `lib/map/basemaps.ts` is now a two-source / two-layer stack: Esri tiles for the imagery + Stadia Maps' Stamen Toner Labels (`tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}.png`) layered on top at `raster-opacity: 0.9`. Cities, roads and state names are legible over satellite. Attribution string updated to credit Stadia + Stamen + OSM alongside Esri/Maxar.
+
+**2. Bhuvan WMS renders.** The old `bhuvan-vec1` host returns 5xx for some BBOX requests in mid-2026. Switched to `bhuvan-vec2.nrsc.gov.in` with the exact uppercase WMS param casing ISRO expects (`SERVICE`, `VERSION`, `REQUEST`, `LAYERS=india3`, `STYLES=`, `FORMAT=image/png`, `TRANSPARENT=true`, `SRS=EPSG:3857`, `WIDTH=256&HEIGHT=256`, `BBOX={bbox-epsg-3857}`). Inline comment in the source documents `lulc50k_1112` as the fallback layer if `india3` ever stops serving.
+
+**3. Locate-me button moved out of overlap.** Was at `bottom-24 right-3` on mobile but flipped to `bottom-16 right-3` on `sm:` breakpoint, which collided with MapLibre's NavigationControl stack (~60 px tall at the bottom-right). Now consistently `bottom-24 right-4` (96 px / 16 px) on every breakpoint — clears the zoom controls and lands in the thumb zone. Toast lifted out of the absolutely-positioned button wrapper and changed to `fixed bottom-32 left-1/2` so it centers on the viewport, not on the small button div.
+
+**4. Favicon contrast (earlier this session).** Slate-900 strokes vanished on dark Chrome/Edge tabs. `public/favicon.svg` now defaults to `#FFFFFF` strokes (visible on dark tabs and used by the `.ico` rasterizer, which doesn't evaluate media queries), with a `@media (prefers-color-scheme: light)` swap to `#0F172A` for light-mode browsers. Inner accent block brightened to `#60A5FA` at 45% opacity. `scripts/generate-favicons.ts` was also hardened earlier: sources from `public/favicon.svg` (no background rect) instead of `app-icon.svg` (solid indigo rect), and Sharp's `resize()` is passed `background: { r:0, g:0, b:0, alpha:0 }` so transparency is preserved through the 16/32/48 ICO sizes.
+
+**Verification**
+- `npm run typecheck` clean
+- `npx next build` ✓ — `/[locale]` First Load JS still 1.27 kB (MapView stays lazy-loaded)
+- All Sprint 2 commits pushed to `origin/main`; Vercel auto-deploy in flight
+
+**Commits added in this close-out**
+- `sprint-2: fix favicon transparency + push to production`
+- `sprint-2: favicon — white strokes on dark tabs, brighter accent`
+- `sprint-2: fix satellite labels, bhuvan wms, locate-me position`
+
+**Sprint 2 status: closed.** Live at <https://land.trenlens.com>. The map ships. Sprint 3 (parcels + drill-down past state level) is now the next session's work — see prompt above.
+
 
