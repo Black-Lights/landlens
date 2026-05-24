@@ -41,6 +41,10 @@ next-env.d.ts
 # prisma — generated client lives in node_modules; migrations are committed
 prisma/.env
 
+# supabase CLI local state (linked-project metadata)
+supabase/.temp/
+supabase/.branches/
+
 # IDE
 .idea/
 .vscode/*
