@@ -20,12 +20,23 @@ async function svgBuffer(name: string): Promise<Buffer> {
   return fs.readFile(path.join(BRAND, name));
 }
 
+// Transparent PNG rasterization. Never flatten; keep the alpha channel so the
+// favicon doesn't pick up a solid background when the OS/browser composites it.
 async function rasterize(svg: Buffer, size: number): Promise<Buffer> {
-  return sharp(svg, { density: 384 }).resize(size, size, { fit: 'contain' }).png().toBuffer();
+  return sharp(svg, { density: 384 })
+    .resize(size, size, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
 }
 
 async function generateFavicon(): Promise<void> {
-  const svg = await svgBuffer('app-icon.svg');
+  // Source the favicon from public/favicon.svg — it has no background rect, so
+  // the .ico stays transparent against any browser tab/theme color. The indigo
+  // app-icon.svg is reserved for the apple-touch-icon below (iOS needs opaque).
+  const svg = await fs.readFile(path.join(PUBLIC, 'favicon.svg'));
   const sizes = [16, 32, 48];
   const pngs = await Promise.all(sizes.map((s) => rasterize(svg, s)));
   const ico = await pngToIco(pngs);
