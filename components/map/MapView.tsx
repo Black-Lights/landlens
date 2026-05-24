@@ -61,7 +61,6 @@ export function MapView() {
     () => basemaps[basemapId].style({ maptilerKey }),
     [basemapId, maptilerKey]
   );
-  const attributionLine = basemaps[basemapId].attribution;
 
   const onMouseMove = useCallback((e: MapLayerMouseEvent) => {
     setCursor({ lat: e.lngLat.lat, lng: e.lngLat.lng });
@@ -162,11 +161,11 @@ export function MapView() {
       >
         <NavigationControl position="bottom-right" showCompass={false} />
         <ScaleControl position="bottom-left" maxWidth={120} unit="metric" />
-        <AttributionControl
-          position="bottom-right"
-          compact
-          customAttribution={attributionLine}
-        />
+        {/* Attribution is sourced from each layer's `source.attribution` field,
+            so we don't pass customAttribution (it would duplicate MapTiler's
+            embedded string). Forced compact + bottom-left so it sits next to
+            the scale bar and doesn't compete with the nav/locate stack. */}
+        <AttributionControl position="bottom-left" compact />
 
         <Source
           id={STATES_SOURCE_ID}
