@@ -41,6 +41,16 @@ export function AuthButton() {
     };
   }, []);
 
+  // Other components (e.g. the save-parcel heart) ask the header to open the
+  // sign-in modal via a custom event — keeps the modal a single instance.
+  useEffect(() => {
+    function onSignInRequest() {
+      setSignInOpen(true);
+    }
+    window.addEventListener('landlens:signin', onSignInRequest);
+    return () => window.removeEventListener('landlens:signin', onSignInRequest);
+  }, []);
+
   useEffect(() => {
     if (!menuOpen) return;
     function onClick(e: MouseEvent) {

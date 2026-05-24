@@ -441,6 +441,21 @@ export function MapView() {
     }
   }, [indiaLabel, tErrors]);
 
+  // On first mount, honour ?parcel=<uuid> (deep link from /saved or a share
+  // link) and ?signin=1 (set by middleware-redirected pages that need auth).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const parcel = params.get('parcel');
+    if (parcel && /^[0-9a-f-]{36}$/i.test(parcel)) {
+      setSelectedParcel(parcel);
+    }
+    if (params.get('signin') === '1') {
+      // Fire after the AuthButton has mounted its event listener.
+      setTimeout(() => window.dispatchEvent(new CustomEvent('landlens:signin')), 50);
+    }
+  }, []);
+
   // Cmd/Ctrl+K opens search. Ignore when the user is typing in another input.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

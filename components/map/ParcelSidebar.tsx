@@ -8,6 +8,9 @@ import { clsx } from 'clsx';
 import { Badge } from '@/components/ui/Badge';
 import { LAND_TYPE_COLORS } from '@/lib/map/constants';
 import { OwnershipTimeline } from './OwnershipTimeline';
+import { SaveParcelButton } from './SaveParcelButton';
+import { ShareButton } from './ShareButton';
+import { ExportMenu } from './ExportMenu';
 
 export interface ParcelDetail {
   id: string;
@@ -151,6 +154,12 @@ export function ParcelSidebar({ parcelId, onClose }: Props) {
         )}
         {data && (
           <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <SaveParcelButton parcelId={data.id} />
+              <ShareButton parcelId={data.id} />
+              <ExportMenu parcelId={data.id} khasraNo={data.khasra_no} />
+            </div>
+
             <div className="flex flex-wrap gap-2">
               {data.land_type && (
                 <Badge variant="land" style={{ backgroundColor: landColor }}>
