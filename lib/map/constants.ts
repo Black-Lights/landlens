@@ -16,3 +16,19 @@ export const DRILL_ZOOM: Record<DrillLevel, number> = {
   tehsil: 11,
   village: 13,
 };
+
+// Land-type palette — used by the parcel fill layer and badges.
+export const LAND_TYPE_COLORS: Record<string, string> = {
+  agricultural: '#84cc16',  // lime-500
+  residential:  '#f59e0b',  // amber-500
+  commercial:   '#a855f7',  // purple-500
+  industrial:   '#64748b',  // slate-500
+  forest:       '#15803d',  // green-700
+  government:   '#0ea5e9',  // sky-500
+  water_body:   '#06b6d4',  // cyan-500
+  wasteland:    '#a8a29e',  // stone-400
+  mixed:        '#ec4899',  // pink-500
+};
+
+export const LAND_TYPES = Object.keys(LAND_TYPE_COLORS);
+
