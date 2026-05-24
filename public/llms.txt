@@ -13,6 +13,7 @@
 - /api/parcels/{id} — single parcel (Sprint 3)
 - /api/parcels/at?lat=X&lng=Y — point-in-polygon lookup (Sprint 3)
 - /api/parcels/nearby?lat=X&lng=Y&radius_m=500 — radius search, geography-based (Sprint 3)
+- /api/search?q=text&type=state|district|village|khasra|owner&state=LGD — unified search across boundaries, parcels, owners. Fuzzy (pg_trgm), multilingual (name_en/name_hi/name_local). Each result has `bbox` (boundaries) or `centroid` (parcels) for flyTo, plus an `ancestors` chain. (Sprint 4)
 
 ## Conventions
 - All responses are JSON with an envelope `{ data, meta }` on success and `{ error: { code, message, suggested_action, docs_url } }` on failure.

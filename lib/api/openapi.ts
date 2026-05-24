@@ -66,6 +66,37 @@ export const ParcelDetailSchema = registry.register(
     .openapi('ParcelDetail'),
 );
 
+export const SearchResultSchema = registry.register(
+  'SearchResult',
+  z
+    .object({
+      type: z.enum(['state', 'district', 'village', 'khasra', 'owner']),
+      id: z.string(),
+      label: z.string(),
+      sublabel: z.string().nullable(),
+      parcel_id: z.string().uuid().nullable(),
+      ancestors: z.object({
+        state: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+        district: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+        village: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+      }),
+      bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]).nullable(),
+      centroid: LngLatSchema.nullable(),
+      score: z.number(),
+    })
+    .openapi('SearchResult'),
+);
+
+export const SearchResponseSchema = registry.register(
+  'SearchResponse',
+  z
+    .object({
+      query: z.string(),
+      results: z.array(SearchResultSchema),
+    })
+    .openapi('SearchResponse'),
+);
+
 export const NearbyParcelSchema = registry.register(
   'NearbyParcel',
   z
@@ -165,6 +196,30 @@ registry.registerPath({
   request: { query: z.object({ village_id: z.string().uuid() }) },
   responses: {
     200: { description: 'GeoJSON FeatureCollection', content: { 'application/geo+json': { schema: z.unknown() } } },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/search',
+  summary: 'Unified search across boundaries, parcels, and owners',
+  description:
+    'Returns ranked matches across states, districts, villages, khasra numbers, and ownership records. Backed by Postgres pg_trgm for typo-tolerance and the multilingual name columns (name_en / name_hi / name_local). Exact > prefix > trigram similarity. Each result carries an ancestor chain and either a bbox (for boundary types) or centroid (for parcel types) suitable for `flyTo`.',
+  request: {
+    query: z.object({
+      q: z.string().min(1).max(120).openapi({ example: 'pune' }),
+      type: z.enum(['state', 'district', 'village', 'khasra', 'owner']).optional(),
+      state: z.string().optional().openapi({
+        description: 'Restrict to a state by LGD code or name. Honoured by all types except none.',
+      }),
+      limit: z.coerce.number().int().min(1).max(50).default(20).optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Ranked search results, highest-score first',
+      content: { 'application/json': { schema: SearchResponseSchema } },
+    },
   },
 });
 
