@@ -21,7 +21,9 @@ All brand assets live in [`public/brand/`](../public/brand/) so they ship with t
 
 | File | Use |
 |---|---|
-| `logo.svg` | Full lockup (icon + wordmark). Header, README, anywhere we have horizontal space. Strokes use `currentColor` so the wordmark inherits the parent's text color. |
+| `logo.svg` | Full lockup (icon + wordmark). Strokes use `currentColor` — best for inline-SVG use inside the app (via the `<Logo>` component) where the parent's text color drives the stroke. |
+| `logo-light.svg` | Full lockup with **slate-900 strokes** baked in. Use on light backgrounds when you can't render inline (READMEs, third-party embeds, GitHub `<img>` tags). |
+| `logo-dark.svg` | Full lockup with **white strokes** baked in, plus a slightly brighter indigo so it pops on dark surfaces. Pair with `logo-light.svg` inside a `<picture>` element for theme-aware READMEs. |
 | `icon.svg` | Icon only, square. App tabs, compact contexts, footer marks. Also uses `currentColor`. |
 | `app-icon.svg` | Solid-background variant — indigo fill, white strokes. Source for PWA / app store icons and the rasterized favicon. |
 | `favicon.svg` | Small-size optimized icon, fixed colors (slate-900 strokes, indigo highlight). Used by `<link rel="icon">`. |
@@ -76,6 +78,19 @@ import Logo from '@/components/nav/Logo';
 ```
 
 The `<Logo>` component inlines the SVG so the strokes can pick up `currentColor` and so there's no extra network request.
+
+## In Markdown (READMEs, GitHub)
+
+GitHub renders SVG as a flat `<img>` — `currentColor` falls back to black, which disappears on the dark theme. Use the baked-color variants inside a `<picture>` element so each theme picks the right one:
+
+```html
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/brand/logo-dark.svg">
+  <img src="public/brand/logo-light.svg" alt="LandLens" width="280">
+</picture>
+```
+
+This is the pattern used by [the repo README](../README.md).
 
 ## What's Next
 

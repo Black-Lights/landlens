@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="public/brand/logo.svg" alt="LandLens" width="280"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/logo-dark.svg">
+    <img src="public/brand/logo-light.svg" alt="LandLens" width="280">
+  </picture>
 </p>
 
 <p align="center">
