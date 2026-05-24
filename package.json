@@ -23,6 +23,7 @@
     "@ai-sdk/openai": "^1.0.0",
     "@asteasolutions/zod-to-openapi": "^7.3.0",
     "@prisma/client": "^5.22.0",
+    "@react-pdf/renderer": "^4.5.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.46.1",
     "@turf/turf": "^7.1.0",
@@ -39,6 +40,7 @@
     "react-dom": "^18.3.1",
     "react-map-gl": "^7.1.7",
     "tailwind-merge": "^2.5.4",
+    "tokml": "^0.4.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
