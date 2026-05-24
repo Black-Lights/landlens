@@ -38,10 +38,31 @@ import { generateMockParcels, generateMockVillages, mulberry32 } from '@/lib/par
 
 const PUNE_RURAL_LGD = '519';
 const STATE_NAME = 'Maharashtra';
+const STATE_NAME_HI = 'महाराष्ट्र';
+const STATE_NAME_LOCAL = 'महाराष्ट्र'; // Marathi shares the Devanagari script.
 const STATE_LGD = '27';
 const DISTRICT_NAME = 'Pune Rural';
+const DISTRICT_NAME_HI = 'पुणे ग्रामीण';
+const DISTRICT_NAME_LOCAL = 'पुणे ग्रामीण';
 const SOURCE_TAG = 'pune_rural_mock';
 const VILLAGE_COUNT = 10;
+
+// Curated list of real Pune Rural village/tehsil names with Devanagari forms.
+// Replaces the prior faker-generated random city names so the seed contains
+// authentic Hindi/Marathi labels for cross-script search and rendering.
+// Order matters — used by index in the loop below.
+const PUNE_VILLAGES: { en: string; hi: string; local: string }[] = [
+  { en: 'Wagholi',         hi: 'वाघोली',     local: 'वाघोली' },
+  { en: 'Pirangut',        hi: 'पिरंगुट',   local: 'पिरंगुट' },
+  { en: 'Bhugaon',         hi: 'भुगाव',      local: 'भुगाव' },
+  { en: 'Lohagaon',        hi: 'लोहगाव',     local: 'लोहगाव' },
+  { en: 'Chakan',          hi: 'चाकण',       local: 'चाकण' },
+  { en: 'Talegaon Dabhade', hi: 'तळेगाव दाभाडे', local: 'तळेगाव दाभाडे' },
+  { en: 'Khed',            hi: 'खेड',        local: 'खेड' },
+  { en: 'Junnar',          hi: 'जुन्नर',     local: 'जुन्नर' },
+  { en: 'Mulshi',          hi: 'मुळशी',      local: 'मुळशी' },
+  { en: 'Maval',           hi: 'मावळ',       local: 'मावळ' },
+];
 const PARCELS_MIN = 25;
 const PARCELS_MAX = 50;
 const RNG_SEED = 0x70_75_6e_65; // "pune" in hex — deterministic output
@@ -86,11 +107,19 @@ async function main() {
 
   // ── 2. State / district / villages ────────────────────────────────────
   const stateId = await upsertAdminPolygon({
-    nameEn: STATE_NAME, level: 'state', lgdCode: STATE_LGD, parentId: null, geometry: mhFeat.geometry,
+    nameEn: STATE_NAME,
+    nameHi: STATE_NAME_HI,
+    nameLocal: STATE_NAME_LOCAL,
+    level: 'state',
+    lgdCode: STATE_LGD,
+    parentId: null,
+    geometry: mhFeat.geometry,
   });
 
   const districtId = await upsertAdminPolygon({
     nameEn: DISTRICT_NAME,
+    nameHi: DISTRICT_NAME_HI,
+    nameLocal: DISTRICT_NAME_LOCAL,
     level: 'district',
     lgdCode: PUNE_RURAL_LGD,
     parentId: stateId,
@@ -107,9 +136,17 @@ async function main() {
 
   for (let i = 0; i < villageFeats.length; i++) {
     const v = villageFeats[i];
-    const villageName = faker.location.city() + ' (M)';
+    // Curated villages roll over for VILLAGE_COUNT > PUNE_VILLAGES.length;
+    // suffix differentiates so name_en stays unique.
+    const curated = PUNE_VILLAGES[i % PUNE_VILLAGES.length];
+    const suffix = i >= PUNE_VILLAGES.length ? ` ${Math.floor(i / PUNE_VILLAGES.length) + 1}` : '';
+    const villageName = curated.en + suffix;
+    const villageNameHi = curated.hi + suffix;
+    const villageNameLocal = curated.local + suffix;
     const villageId = await upsertAdminPolygon({
       nameEn: villageName,
+      nameHi: villageNameHi,
+      nameLocal: villageNameLocal,
       level: 'village',
       lgdCode: null,
       parentId: districtId,
@@ -149,6 +186,8 @@ async function main() {
 
 interface UpsertArgs {
   nameEn: string;
+  nameHi?: string | null;
+  nameLocal?: string | null;
   level: 'state' | 'district' | 'village';
   lgdCode: string | null;
   parentId: string | null;
@@ -156,6 +195,9 @@ interface UpsertArgs {
 }
 
 async function upsertAdminPolygon(args: UpsertArgs): Promise<string> {
+  const nameHi = args.nameHi ?? null;
+  const nameLocal = args.nameLocal ?? null;
+
   if (args.lgdCode) {
     // Try update-or-insert by LGD code.
     const existing = await db.$queryRaw<{ id: string }[]>`
@@ -167,6 +209,8 @@ async function upsertAdminPolygon(args: UpsertArgs): Promise<string> {
         await db.$executeRaw`
           UPDATE admin_boundaries
           SET name_en = ${args.nameEn},
+              name_hi = ${nameHi},
+              name_local = ${nameLocal},
               level = ${args.level},
               parent_id = ${args.parentId}::uuid,
               geom = ST_Multi(ST_GeomFromGeoJSON(${geoJson})),
@@ -183,10 +227,12 @@ async function upsertAdminPolygon(args: UpsertArgs): Promise<string> {
   const geoJson = args.geometry ? JSON.stringify(args.geometry) : null;
   const inserted = await db.$queryRaw<{ id: string }[]>(Prisma.sql`
     INSERT INTO admin_boundaries (
-      id, name_en, level, parent_id, lgd_code, geom, centroid, area_sqkm, created_at
+      id, name_en, name_hi, name_local, level, parent_id, lgd_code, geom, centroid, area_sqkm, created_at
     ) VALUES (
       gen_random_uuid(),
       ${args.nameEn},
+      ${nameHi},
+      ${nameLocal},
       ${args.level},
       ${args.parentId}::uuid,
       ${args.lgdCode},
