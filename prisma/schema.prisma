@@ -1,0 +1,258 @@
+// LandLens — Prisma schema
+// Sprint 1: full schema from docs/02-database-schema.md.
+// Geometry columns are `Unsupported(...)` — Prisma can't read/write them
+// directly. All spatial queries go through `$queryRaw` (see docs §02).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")  // pooled (PgBouncer) for the app
+  directUrl  = env("DIRECT_URL")    // direct connection for migrations
+  extensions = [postgis, pg_trgm, pgsodium, uuidOssp(map: "uuid-ossp")]
+}
+
+/// Country → State → District → Tehsil → Village, self-referential.
+model AdminBoundary {
+  id        String   @id @default(uuid()) @db.Uuid
+  nameEn    String   @map("name_en")
+  nameHi    String?  @map("name_hi")
+  nameLocal String?  @map("name_local")
+  level     String
+  parentId  String?  @map("parent_id") @db.Uuid
+  lgdCode   String?  @unique @map("lgd_code")
+  geom      Unsupported("geometry(MultiPolygon, 4326)")
+  centroid  Unsupported("geometry(Point, 4326)")?
+  areaSqkm  Decimal? @map("area_sqkm") @db.Decimal
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  parent   AdminBoundary?  @relation("AdminBoundaryToParent", fields: [parentId], references: [id])
+  children AdminBoundary[] @relation("AdminBoundaryToParent")
+  villageParcels Parcel[]  @relation("VillageParcels")
+
+  @@index([parentId], map: "admin_parent_idx")
+  @@index([level], map: "admin_level_idx")
+  // GIST on geom + GIN trigram on name_en added manually in migration SQL.
+  @@map("admin_boundaries")
+}
+
+/// The heart of the platform — one row per plot.
+model Parcel {
+  id              String   @id @default(uuid()) @db.Uuid
+  ulpin           String?  @unique
+  khasraNo        String?  @map("khasra_no")
+  surveyNo        String?  @map("survey_no")
+  subDivision     String?  @map("sub_division")
+  villageId       String?  @map("village_id") @db.Uuid
+  areaSqm         Decimal  @map("area_sqm") @db.Decimal
+  // area_acres, area_hectares — GENERATED ALWAYS AS; added via raw SQL in migration.
+  landType        String?  @map("land_type")
+  landUse         String?  @map("land_use")
+  classification  String?
+  geom            Unsupported("geometry(Polygon, 4326)")
+  centroid        Unsupported("geometry(Point, 4326)")?
+  sourcePortal    String?  @map("source_portal")
+  dataYear        Int?     @map("data_year")
+  rawData         Json?    @map("raw_data") @db.JsonB
+
+  // Boundary provenance — see docs/04-boundary-segmentation.md
+  boundarySource     String   @default("mock") @map("boundary_source")
+  confidenceScore    Decimal? @map("confidence_score") @db.Decimal(3, 2)
+  aiModelVersion     String?  @map("ai_model_version")
+  needsVerification  Boolean  @default(false) @map("needs_verification")
+  lastVerifiedAt     DateTime? @map("last_verified_at") @db.Timestamptz(6)
+  verifiedBy         String?   @map("verified_by") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  village       AdminBoundary?     @relation("VillageParcels", fields: [villageId], references: [id])
+  owners        OwnershipRecord[]
+  encumbrances  Encumbrance[]
+  corrections   ParcelCorrection[]
+  saves         SavedParcel[]
+  accesses      AccessLog[]
+
+  @@index([villageId], map: "parcels_village_idx")
+  @@index([khasraNo], map: "parcels_khasra_idx")
+  @@index([landType], map: "parcels_land_type_idx")
+  @@index([boundarySource], map: "parcels_source_idx")
+  // GIST(geom), GIST(centroid), GIN trigram, CHECK constraints,
+  // partial idx on needs_verification, generated columns — in migration SQL.
+  @@map("parcels")
+}
+
+/// Community correction queue — never overwrites parcels.geom directly.
+model ParcelCorrection {
+  id          String   @id @default(uuid()) @db.Uuid
+  parcelId    String   @map("parcel_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  previousGeom Unsupported("geometry(Polygon, 4326)")?
+  newGeom     Unsupported("geometry(Polygon, 4326)")?
+  reason      String?
+  status      String?
+  reviewedBy  String?  @map("reviewed_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  parcel Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@index([parcelId], map: "corrections_parcel_idx")
+  @@index([status], map: "corrections_status_idx")
+  @@map("parcel_corrections")
+}
+
+/// Record of Rights / Khatauni / Jamabandi.
+model OwnershipRecord {
+  id               String    @id @default(uuid()) @db.Uuid
+  parcelId         String    @map("parcel_id") @db.Uuid
+  ownerName        String    @map("owner_name")
+  ownerNameEn      String?   @map("owner_name_en")
+  ownerNameMasked  String?   @map("owner_name_masked")
+  fatherOrSpouse   String?   @map("father_or_spouse")
+  ownershipType    String?   @map("ownership_type")
+  shareFraction    String?   @map("share_fraction")
+  mutationNo       String?   @map("mutation_no")
+  registrationDate DateTime? @map("registration_date") @db.Date
+  transferDate     DateTime? @map("transfer_date") @db.Date
+  documentNo       String?   @map("document_no")
+  documentType     String?   @map("document_type")
+  // is_current — GENERATED ALWAYS AS (transfer_date IS NULL) STORED; added in SQL.
+  remarks          String?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  parcel Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@index([parcelId], map: "ownership_parcel_idx")
+  @@map("ownership_records")
+}
+
+/// Mortgages, court cases, disputes — many-to-one with parcels.
+model Encumbrance {
+  id           String    @id @default(uuid()) @db.Uuid
+  parcelId     String    @map("parcel_id") @db.Uuid
+  type         String?
+  partyName    String?   @map("party_name")
+  description  String?
+  amount       Decimal?  @db.Decimal
+  startDate    DateTime? @map("start_date") @db.Date
+  endDate      DateTime? @map("end_date") @db.Date
+  status       String?
+  referenceNo  String?   @map("reference_no")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  parcel Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@index([parcelId], map: "encumbrances_parcel_idx")
+  @@map("encumbrances")
+}
+
+/// User bookmarks — auth.users(id) lives in Supabase Auth schema.
+model SavedParcel {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  parcelId  String   @map("parcel_id") @db.Uuid
+  label     String?
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  parcel Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, parcelId])
+  @@map("saved_parcels")
+}
+
+/// Audit log — IP hashed, never raw.
+model AccessLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  parcelId   String?  @map("parcel_id") @db.Uuid
+  ipHash     String?  @map("ip_hash")
+  userAgent  String?  @map("user_agent")
+  accessedAt DateTime @default(now()) @map("accessed_at") @db.Timestamptz(6)
+
+  parcel Parcel? @relation(fields: [parcelId], references: [id])
+
+  @@index([parcelId], map: "access_log_parcel_idx")
+  @@index([userId], map: "access_log_user_idx")
+  @@map("access_log")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI-first / BYOK tables — wired in Sprint 1, used from Sprint 13.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// BYOK — admin's LLM API key, encrypted at rest via pgsodium.
+model AdminApiKey {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  provider     String
+  encryptedKey Bytes    @map("encrypted_key")
+  keyLabel     String?  @map("key_label")
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([userId, provider])
+  @@map("admin_api_keys")
+}
+
+model AdminAssistantConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  messages AdminAssistantMessage[]
+
+  @@map("admin_assistant_conversations")
+}
+
+model AdminAssistantMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  role           String?
+  content        Json     @db.JsonB
+  tokensUsed     Int?     @map("tokens_used")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation AdminAssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt], map: "assistant_msgs_conv_idx")
+  @@map("admin_assistant_messages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Commercial scaffolding — every key is tier=community in Phase 1.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id              String   @id @default(uuid()) @db.Uuid
+  ownerEmail      String?  @map("owner_email")
+  organization    String?
+  tier            String?  @default("community")
+  rateLimitPerMin Int      @default(60) @map("rate_limit_per_min")
+  monthlyQuota    Int?     @map("monthly_quota")
+  usedThisMonth   Int      @default(0) @map("used_this_month")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  usage ApiUsage[]
+
+  @@map("api_keys")
+}
+
+model ApiUsage {
+  id         String   @id @default(uuid()) @db.Uuid
+  apiKeyId   String?  @map("api_key_id") @db.Uuid
+  endpoint   String?
+  statusCode Int?     @map("status_code")
+  responseMs Int?     @map("response_ms")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  apiKey ApiKey? @relation(fields: [apiKeyId], references: [id])
+
+  @@index([apiKeyId, createdAt], map: "usage_key_time_idx")
+  @@map("api_usage")
+}
