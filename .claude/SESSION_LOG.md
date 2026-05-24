@@ -253,3 +253,37 @@ tsconfig.json
 > Scope: MapLibre GL integration, India state boundaries as vector tiles, hierarchical drill-down zoom (state → district → tehsil → village), BasemapSwitcher (MapTiler streets default, Esri World Imagery satellite, OpenTopoMap terrain, Bhuvan WMS optional), AttributionFooter that swaps strings on basemap change, Breadcrumb, ScaleBar, CoordinateReadout, ZoomControls, "Locate me" button with the GPS feature spec from CLAUDE_CODE_PROMPT §4. Do NOT seed parcels yet — that's Sprint 3.
 > Before doing anything, confirm the user has the Supabase + Upstash env vars filled and `prisma migrate dev` + `prisma/sql/post-init.sql` have been run. The site should boot locally on `npm run dev` and `/api/health` should return `db: 'ok'`.
 
+### Sprint 1 close-out (2026-05-24, end of session)
+
+Sprint 1 is **complete and live in production**.
+
+**Verification snapshots**
+- Local: `GET http://localhost:3000/api/health` → `{ status: "ok", db: "ok", redis: "ok" }`
+- Production: `GET https://land.trenlens.com/api/health` → `{ status: "ok", db: "ok", redis: "ok", version: "aa1239b" }`
+
+The `version` field on the production response is the short commit SHA from `VERCEL_GIT_COMMIT_SHA` — matches `aa1239b` (the initial Prisma migration commit), confirming the deployed build is exactly the code on `main`.
+
+**Manual steps completed outside Claude Code during this session**
+- Supabase project `landlens` created in Mumbai (`ap-south-1`), Postgres 17.6 on `t4g.nano`, extensions enabled (postgis 3.3.7, pg_trgm 1.6, uuid-ossp 1.1, pgsodium 3.1.8). Pooler hostname turned out to be `aws-1-ap-south-1.pooler.supabase.com` (not `aws-0-`); `.env.local` updated accordingly.
+- Upstash Redis database created in Mumbai (free tier): `capital-glider-135285.upstash.io`. URL + token added to `.env.local` and to Vercel env vars.
+- MapTiler API key added to `.env.local` and Vercel — `NEXT_PUBLIC_MAPTILER_KEY` is now populated so Sprint 2 can use it directly.
+- Vercel project imported from `Black-Lights/landlens`, all env vars from `.env.local` propagated to Production / Preview / Development environments.
+- Domain `land.trenlens.com` configured via Cloudflare's Vercel auto-configure flow — CNAME `land → cname.vercel-dns.com` (DNS-only, gray cloud) plus the TXT verification record. TLS auto-issued by Vercel.
+
+**What is NOT done yet** (and is correctly scoped to later sprints)
+- Map rendering (Sprint 2)
+- Parcel data seeding — turf voronoi mocks, datameet boundary ingest, faker owners (Sprint 3)
+- Search / command palette (Sprint 4)
+- Real i18n catalogs — the folder structure + locale routing are ready, but the JSON files are stubs (Sprint 5)
+- Supabase Auth wiring, OTP login, saved-parcel bookmarks (Sprint 6)
+- Real state-portal scrapers (Sprint 7)
+- AI segmentation service integration (Sprint 9)
+- MCP server + in-app admin assistant (Sprints 12 / 13)
+- Rate-limit middleware on every API route (Sprint 14) — `@upstash/ratelimit` is installed but not yet wrapped around handlers
+
+**Live URL:** <https://land.trenlens.com>
+
+**Repo:** <https://github.com/Black-Lights/landlens>
+
+Sprint 2 prompt is above and ready to use verbatim in the next session.
+
