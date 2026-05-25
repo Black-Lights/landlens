@@ -54,7 +54,16 @@ export async function stitchStaticMap(
   const zoom = opts.geometry
     ? fitZoomToGeometry(opts.geometry, opts.width, opts.height, opts.zoom ?? 17)
     : Math.round(opts.zoom ?? 16);
-  const { x: cx, y: cy } = lngLatToTile(center[0], center[1], zoom);
+
+  // Crop centre: when geometry is supplied, use the *bbox midpoint* rather
+  // than the polygon's centroid of mass. PostGIS `ST_Centroid` returns the
+  // mass centroid which is offset from the bbox centre for irregular
+  // shapes, and that offset is what was clipping the parcel's bottom edge
+  // even when the zoom level technically fit.
+  const cropCenter = opts.geometry
+    ? bboxCenter(opts.geometry) ?? center
+    : center;
+  const { x: cx, y: cy } = lngLatToTile(cropCenter[0], cropCenter[1], zoom);
 
   // Anchor a 2×2 grid so the centre tile sits at floor(cx), floor(cy).
   const baseX = Math.floor(cx) - 1;
@@ -130,6 +139,21 @@ export async function stitchStaticMap(
     .extract({ left, top, width: opts.width, height: opts.height })
     .png()
     .toBuffer();
+}
+
+// Geometric centre of a polygon's bounding box. Returns null when the
+// geometry isn't a polygon (or has no exterior ring).
+function bboxCenter(geometry: Geometry): [number, number] | null {
+  if (geometry.type !== 'Polygon' || !geometry.coordinates?.[0]) return null;
+  const ring = geometry.coordinates[0] as [number, number][];
+  let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  for (const [lng, lat] of ring) {
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  return [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
 }
 
 // Pick the highest integer zoom where the polygon's bounding box fits
