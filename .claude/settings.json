@@ -76,7 +76,13 @@
       "Bash(env)",
       "Bash(supabase --help)",
       "Bash(supabase config *)",
-      "Bash(supabase init *)"
+      "Bash(supabase init *)",
+      "Bash(curl -sL -o /tmp/pne-07-002.png -w \"status=%{http_code}\\\\nsize=%{size_download}\\\\n\" \"https://land.trenlens.com/api/static-map/3e919bea-2c81-4850-9ac1-95571570ceab?w=800&h=480\")",
+      "Bash(curl -sL -o /tmp/pne-07-002.png -w \"status=%{http_code}\\\\nsize=%{size_download}\\\\n\" \"https://land.trenlens.com/api/static-map/3e919bea-2c81-4850-9ac1-95571570ceab?w=800&h=480&z=18\")",
+      "Bash(ls -la /tmp/pne-07-002.png && cp /tmp/pne-07-002.png /c/tmp/pne-07-002.png && ls -la /c/tmp/pne-07-002.png)",
+      "Bash(curl -sL \"https://land.trenlens.com/api/parcels/by-village?village_id=29b083c6-47a5-4a90-ac17-b6d12d73c11e\" -o /tmp/by-village.json)",
+      "Bash(node -e ' *)",
+      "Bash(curl -sL \"https://land.trenlens.com/api/parcels/by-village?village_id=29b083c6-47a5-4a90-ac17-b6d12d73c11e\" -o c:/tmp/by-village.json)"
     ],
     "additionalDirectories": [
       "\\tmp",

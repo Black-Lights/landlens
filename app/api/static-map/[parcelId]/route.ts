@@ -32,10 +32,12 @@ interface Row {
 async function handler(request: Request, ctx: { params: { parcelId: string } }) {
   const { parcelId } = ParamsSchema.parse(ctx.params);
   const url = new URL(request.url);
+  // `URLSearchParams.get` returns null for missing keys; Zod's `.default()`
+  // only fires on undefined, so coalesce first.
   const { w, h, z } = QuerySchema.parse({
-    w: url.searchParams.get('w'),
-    h: url.searchParams.get('h'),
-    z: url.searchParams.get('z'),
+    w: url.searchParams.get('w') ?? undefined,
+    h: url.searchParams.get('h') ?? undefined,
+    z: url.searchParams.get('z') ?? undefined,
   });
 
   const rows = await db.$queryRaw<Row[]>`
