@@ -34,16 +34,19 @@ export function staticMapUrl(
   return `https://api.maptiler.com/maps/${style}/static/${lng},${lat},${zoom}/${opts.width}x${opts.height}.png?key=${key}${overlayParam}`;
 }
 
-// Encode a polygon outline as MapTiler's `path` param: `fill:RRGGBB|stroke:RRGGBB|width:N|lng,lat|lng,lat|…`.
+// Encode a polygon outline as MapTiler's `path` param.
+// Format (per https://docs.maptiler.com/cloud/api/static-maps/#paths):
+//   fill / stroke must be rgb(), rgba(), or #RRGGBB — bare hex is rejected.
+//   pipes separate the parameter blocks and the lng,lat point list.
 function polygonOverlay(geometry: Geometry | null | undefined): string | null {
   if (!geometry) return null;
   if (geometry.type !== 'Polygon' || !geometry.coordinates?.[0]) return null;
   const ring = geometry.coordinates[0] as [number, number][];
-  // MapTiler caps path length — sample down to ~30 points so the URL stays
-  // well under the ~2KB practical limit for query strings.
-  const sampled = sampleRing(ring, 32);
+  // MapTiler caps path length — sample down so the URL stays well under
+  // the ~2KB practical limit for query strings.
+  const sampled = sampleRing(ring, 24);
   const points = sampled.map(([lng, lat]) => `${lng.toFixed(5)},${lat.toFixed(5)}`).join('|');
-  return `fill:4F46E588|stroke:4F46E5|width:2|${points}`;
+  return `fill:rgba(79,70,229,0.35)|stroke:rgb(79,70,229)|width:3|${points}`;
 }
 
 function sampleRing(ring: [number, number][], target: number): [number, number][] {

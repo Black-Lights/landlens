@@ -6,7 +6,7 @@
 
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import type { ParcelExport } from './types';
-import { staticMapUrl } from '@/lib/map/static-image';
+import { stitchStaticMap } from '@/lib/map/tile-stitch';
 
 // Pre-fetched static map. react-pdf in the Node runtime is unreliable at
 // fetching remote images during PDF assembly (timeouts and quiet failures
@@ -141,29 +141,21 @@ export function centroidOf(parcel: ParcelExport): [number, number] | null {
   return [lngSum / count, latSum / count];
 }
 
-// Fetch a MapTiler static-map PNG as a Buffer so we can hand it to
-// @react-pdf's <Image> without making it do its own HTTP request. Returns
-// null when no key is configured or the upstream call fails — the PDF then
-// renders without a map rather than with a broken-image placeholder.
+// Builds the PDF "Location" image by stitching MapTiler satellite tiles —
+// the Static Maps API isn't on our plan, but the tile endpoints work on the
+// free tier. Falls back to no image when the key is missing or all four
+// tiles fail.
 export async function fetchPdfMapImage(parcel: ParcelExport): Promise<PdfMapImage | null> {
   const center = centroidOf(parcel);
   if (!center) return null;
-  const url = staticMapUrl(center, {
+  const buffer = await stitchStaticMap(center, {
     width: 800,
     height: 480,
     zoom: 16,
-    style: 'satellite',
     geometry: parcel.geometry,
   });
-  if (!url) return null;
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const arrayBuffer = await res.arrayBuffer();
-    return { data: Buffer.from(arrayBuffer), format: 'png' };
-  } catch {
-    return null;
-  }
+  if (!buffer) return null;
+  return { data: buffer, format: 'png' };
 }
 
 function formatDate(d: Date): string {

@@ -7,7 +7,6 @@ import Image from 'next/image';
 
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/config';
-import { staticMapUrl } from '@/lib/map/static-image';
 
 interface Saved {
   id: string;
@@ -74,9 +73,9 @@ export function SavedParcelsList({ locale }: { locale: Locale }) {
   return (
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {saved.map((row) => {
-        const thumb = row.centroid
-          ? staticMapUrl(row.centroid, { width: 480, height: 280, zoom: 16, style: 'satellite' })
-          : null;
+        // Thumbnails come from our tile-stitching endpoint — keeps the
+        // MapTiler key server-side and works on the free tile-only plan.
+        const thumb = `/api/static-map/${row.parcel_id}?w=480&h=280`;
         const breadcrumb = [row.village, row.district, row.state].filter(Boolean).join(' · ');
         const label = row.khasra_no ? `Khasra ${row.khasra_no}` : t('title');
         const date = formatDate(row.created_at, locale);

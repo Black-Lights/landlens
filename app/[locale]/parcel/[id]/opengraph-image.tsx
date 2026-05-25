@@ -9,8 +9,9 @@
 
 import { ImageResponse } from 'next/og';
 import { db } from '@/lib/db';
-import { staticMapUrl } from '@/lib/map/static-image';
 import { getTranslations } from 'next-intl/server';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://land.trenlens.com';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -69,12 +70,10 @@ export default async function ParcelOgImage({
   const r = rows[0];
   const acres = r.area_acres ? Number(r.area_acres).toFixed(2) : (Number(r.area_sqm) / 4046.86).toFixed(2);
   const breadcrumb = [r.village_name, r.district_name, r.state_name].filter(Boolean).join(' · ');
-  const center = r.centroid_lng != null && r.centroid_lat != null
-    ? [r.centroid_lng, r.centroid_lat] as [number, number]
-    : null;
-  const mapUrl = center
-    ? staticMapUrl(center, { width: 600, height: 630, zoom: 16, style: 'satellite', geometry: JSON.parse(r.geometry) })
-    : null;
+  // Map snapshot is served by our tile-stitching API so the Satori renderer
+  // only needs to embed a public PNG URL — no Buffer-passing required.
+  const hasCenter = r.centroid_lng != null && r.centroid_lat != null;
+  const mapUrl = hasCenter ? `${SITE_URL}/api/static-map/${params.id}?w=600&h=630` : null;
 
   return new ImageResponse(
     (
