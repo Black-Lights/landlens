@@ -18,7 +18,9 @@ const ParamsSchema = z.object({ parcelId: z.string().uuid() });
 const QuerySchema = z.object({
   w: z.coerce.number().min(64).max(1024).default(480),
   h: z.coerce.number().min(64).max(1024).default(280),
-  z: z.coerce.number().min(10).max(19).default(16),
+  // z is treated as an upper bound — auto-zoom picks a lower value for
+  // larger parcels so the polygon doesn't fill the frame.
+  z: z.coerce.number().min(10).max(19).default(18),
 });
 
 interface Row {

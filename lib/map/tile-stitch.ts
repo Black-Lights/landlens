@@ -47,7 +47,13 @@ export async function stitchStaticMap(
   const key = process.env.NEXT_PUBLIC_MAPTILER_KEY;
   if (!key) return null;
 
-  const zoom = Math.round(opts.zoom ?? 16);
+  // When geometry is provided, pick the zoom that keeps the polygon inside
+  // the output frame with ~30% padding — otherwise large parcels get
+  // clipped and small ones become invisible dots. Caller's `zoom` becomes
+  // the upper bound so we never zoom *past* the requested detail level.
+  const zoom = opts.geometry
+    ? fitZoomToGeometry(opts.geometry, opts.width, opts.height, opts.zoom ?? 17)
+    : Math.round(opts.zoom ?? 16);
   const { x: cx, y: cy } = lngLatToTile(center[0], center[1], zoom);
 
   // Anchor a 2×2 grid so the centre tile sits at floor(cx), floor(cy).
@@ -126,6 +132,42 @@ export async function stitchStaticMap(
     .toBuffer();
 }
 
+// Pick the highest integer zoom where the polygon's bounding box fits
+// inside `width × height` with the configured padding ratio on each side.
+// Walks zooms top-down so we always return the most detailed level that
+// still leaves room for context. Clamped between [10, maxZoom].
+const PADDING_RATIO = 0.7; // fraction of the frame the polygon may occupy
+
+function fitZoomToGeometry(
+  geometry: Geometry,
+  width: number,
+  height: number,
+  maxZoom: number,
+): number {
+  if (geometry.type !== 'Polygon' || !geometry.coordinates?.[0]) {
+    return Math.round(maxZoom);
+  }
+  const ring = geometry.coordinates[0] as [number, number][];
+  let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  for (const [lng, lat] of ring) {
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+
+  for (let z = Math.round(maxZoom); z >= 10; z--) {
+    const tl = lngLatToTile(minLng, maxLat, z);
+    const br = lngLatToTile(maxLng, minLat, z);
+    const pxW = (br.x - tl.x) * TILE_SIZE;
+    const pxH = (br.y - tl.y) * TILE_SIZE;
+    if (pxW <= width * PADDING_RATIO && pxH <= height * PADDING_RATIO) {
+      return z;
+    }
+  }
+  return 10;
+}
+
 function polygonSvg(
   geometry: Geometry,
   baseTileX: number,
@@ -142,7 +184,11 @@ function polygonSvg(
       return `${((x - baseTileX) * TILE_SIZE).toFixed(2)},${((y - baseTileY) * TILE_SIZE).toFixed(2)}`;
     })
     .join(' ');
+  // Outline only — leaving the parcel interior transparent so the satellite
+  // imagery underneath is fully readable. A thin white halo under the
+  // indigo stroke keeps it legible against dark fields.
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-    <polygon points="${pts}" fill="rgba(79,70,229,0.35)" stroke="rgb(79,70,229)" stroke-width="3"/>
+    <polygon points="${pts}" fill="none" stroke="white" stroke-width="6" stroke-linejoin="round"/>
+    <polygon points="${pts}" fill="none" stroke="rgb(79,70,229)" stroke-width="3" stroke-linejoin="round"/>
   </svg>`;
 }

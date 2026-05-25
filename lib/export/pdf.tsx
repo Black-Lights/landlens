@@ -151,7 +151,8 @@ export async function fetchPdfMapImage(parcel: ParcelExport): Promise<PdfMapImag
   const buffer = await stitchStaticMap(center, {
     width: 800,
     height: 480,
-    zoom: 16,
+    // Upper bound — auto-zoom drops down to fit larger parcels with padding.
+    zoom: 18,
     geometry: parcel.geometry,
   });
   if (!buffer) return null;
