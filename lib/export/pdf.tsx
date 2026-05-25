@@ -8,6 +8,16 @@ import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/render
 import type { ParcelExport } from './types';
 import { staticMapUrl } from '@/lib/map/static-image';
 
+// Pre-fetched static map. react-pdf in the Node runtime is unreliable at
+// fetching remote images during PDF assembly (timeouts and quiet failures
+// produce the broken-image placeholder), so the route handler fetches the
+// PNG and hands us a Buffer + format. When `mapImage` is null we just skip
+// the map section instead of rendering the placeholder tile.
+export interface PdfMapImage {
+  data: Buffer;
+  format: 'png' | 'jpg';
+}
+
 const styles = StyleSheet.create({
   page: { padding: 36, fontSize: 10, fontFamily: 'Helvetica', color: '#0f172a' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
@@ -28,21 +38,16 @@ const styles = StyleSheet.create({
   footer: { marginTop: 18, paddingTop: 10, borderTop: '1pt solid #e2e8f0', fontSize: 8, color: '#64748b' },
 });
 
-export function ParcelReport({ parcel }: { parcel: ParcelExport }) {
+export function ParcelReport({
+  parcel,
+  mapImage = null,
+}: {
+  parcel: ParcelExport;
+  mapImage?: PdfMapImage | null;
+}) {
   const breadcrumb = [parcel.village?.name, parcel.district?.name, parcel.state?.name]
     .filter(Boolean)
     .join(' · ');
-
-  const center = centroidOf(parcel);
-  const mapUrl = center
-    ? staticMapUrl(center, {
-        width: 800,
-        height: 480,
-        zoom: 16,
-        style: 'satellite',
-        geometry: parcel.geometry,
-      })
-    : null;
 
   return (
     <Document title={`LandLens — Khasra ${parcel.khasra_no ?? parcel.id}`}>
@@ -70,13 +75,14 @@ export function ParcelReport({ parcel }: { parcel: ParcelExport }) {
           )}
         </View>
 
-        {mapUrl && (
+        {mapImage && (
           <>
             <Text style={styles.sectionTitle}>Location</Text>
-            {/* react-pdf <Image> doesn't render alt text in the PDF, but the
-                lint rule still asks for one — supply a meaningful caption. */}
+            {/* react-pdf accepts an in-memory buffer here, avoiding any
+                runtime image-fetch dance. The route handler pre-fetched the
+                PNG with the parcel outline already overlaid. */}
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
-            <Image src={mapUrl} style={styles.map} />
+            <Image src={mapImage} style={styles.map} />
           </>
         )}
 
@@ -120,7 +126,7 @@ function KV({ label, value }: { label: string; value: string }) {
   );
 }
 
-function centroidOf(parcel: ParcelExport): [number, number] | null {
+export function centroidOf(parcel: ParcelExport): [number, number] | null {
   const g = parcel.geometry;
   if (g.type !== 'Polygon' || !g.coordinates?.[0]) return null;
   const ring = g.coordinates[0] as [number, number][];
@@ -133,6 +139,31 @@ function centroidOf(parcel: ParcelExport): [number, number] | null {
     latSum += ring[i][1];
   }
   return [lngSum / count, latSum / count];
+}
+
+// Fetch a MapTiler static-map PNG as a Buffer so we can hand it to
+// @react-pdf's <Image> without making it do its own HTTP request. Returns
+// null when no key is configured or the upstream call fails — the PDF then
+// renders without a map rather than with a broken-image placeholder.
+export async function fetchPdfMapImage(parcel: ParcelExport): Promise<PdfMapImage | null> {
+  const center = centroidOf(parcel);
+  if (!center) return null;
+  const url = staticMapUrl(center, {
+    width: 800,
+    height: 480,
+    zoom: 16,
+    style: 'satellite',
+    geometry: parcel.geometry,
+  });
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const arrayBuffer = await res.arrayBuffer();
+    return { data: Buffer.from(arrayBuffer), format: 'png' };
+  } catch {
+    return null;
+  }
 }
 
 function formatDate(d: Date): string {

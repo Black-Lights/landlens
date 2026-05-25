@@ -83,7 +83,9 @@ export function ExportMenu({ parcelId, khasraNo }: Props) {
           role="menu"
           className={clsx(
             'absolute top-11 z-30 w-56 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5',
-            'right-0 rtl:right-auto rtl:left-0',
+            // Drop from the button's left edge so the menu stays inside the
+            // sidebar width on mobile (the trigger isn't at the right edge).
+            'left-0 rtl:left-auto rtl:right-0',
           )}
         >
           <ExportItem

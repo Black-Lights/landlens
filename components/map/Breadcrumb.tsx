@@ -19,10 +19,10 @@ export function Breadcrumb({ trail, onJump }: Props) {
   if (trail.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
+    <div className="pointer-events-none absolute left-1/2 top-16 z-20 -translate-x-1/2 md:top-3">
       <nav
         aria-label={t('ariaLabel')}
-        className="pointer-events-auto flex max-w-[90vw] items-center gap-1 overflow-x-auto rounded-full bg-white/95 px-3 py-1.5 text-sm shadow-md ring-1 ring-black/5 backdrop-blur"
+        className="pointer-events-auto flex max-w-[calc(100vw-32px)] items-center gap-1 overflow-x-auto rounded-full bg-white/95 px-3 py-1.5 text-sm shadow-md ring-1 ring-black/5 backdrop-blur md:max-w-[90vw]"
       >
         {trail.map((crumb, i) => {
           const isLast = i === trail.length - 1;

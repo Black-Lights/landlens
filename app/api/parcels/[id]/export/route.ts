@@ -11,7 +11,7 @@ import { ApiError, withErrors } from '@/lib/api/errors';
 import { db } from '@/lib/db';
 import { parcelToGeoJson } from '@/lib/export/geojson';
 import { parcelToKml } from '@/lib/export/kml';
-import { ParcelReport } from '@/lib/export/pdf';
+import { ParcelReport, fetchPdfMapImage } from '@/lib/export/pdf';
 import type { ParcelExport } from '@/lib/export/types';
 
 export const runtime = 'nodejs';
@@ -129,8 +129,10 @@ async function handler(request: Request, ctx: { params: { id: string } }) {
     });
   }
 
-  // format === 'pdf'
-  const buffer = await renderToBuffer(ParcelReport({ parcel }));
+  // format === 'pdf' — prefetch the MapTiler PNG so react-pdf doesn't have to
+  // do its own HTTP fetch (which is unreliable in serverless).
+  const mapImage = await fetchPdfMapImage(parcel);
+  const buffer = await renderToBuffer(ParcelReport({ parcel, mapImage }));
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',

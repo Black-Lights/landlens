@@ -441,6 +441,65 @@ export function MapView() {
     }
   }, [indiaLabel, tErrors]);
 
+  // Hydrate the full map state from a parcel id: drill into its village,
+  // load district / village / parcel layers, fly the camera to its centroid,
+  // and open the sidebar. Shared by `?parcel=<uuid>` deep links and share
+  // links pasted by another user.
+  const goToParcelById = useCallback(async (parcelId: string) => {
+    setSelectedParcel(parcelId);
+    try {
+      const res = await fetch(`/api/parcels/${parcelId}`);
+      if (!res.ok) return;
+      const p = (await res.json()) as {
+        id: string;
+        village: { id: string; name: string } | null;
+        district: { id: string; name: string } | null;
+        state: { id: string; name: string } | null;
+        geometry: Feature<Geometry>['geometry'];
+      };
+
+      const [w, s, e, n] = bbox({ type: 'Feature', geometry: p.geometry, properties: {} } as Feature<Geometry>);
+      mapRef.current?.fitBounds(
+        [[w, s], [e, n]],
+        { padding: 80, duration: 900, maxZoom: 18 },
+      );
+
+      const crumbs: DrillCrumb[] = [{ level: 'india', label: indiaLabel }];
+      if (p.state) crumbs.push({ level: 'state', label: p.state.name });
+      if (p.district) crumbs.push({ level: 'district', label: p.district.name });
+      if (p.village) crumbs.push({ level: 'village', label: p.village.name });
+      setTrail(crumbs);
+      setDrill({
+        state: p.state ? { name: p.state.name } : undefined,
+        district: p.district ? { name: p.district.name } : undefined,
+        village: p.village ? { id: p.village.id, name: p.village.name } : undefined,
+      });
+
+      // Best-effort layer hydration so the surrounding context paints in.
+      // If districts/villages aren't bundled for this state, the request just
+      // fails silently — the sidebar still works.
+      if (p.state) {
+        try {
+          const dres = await fetch(`/api/districts?state=${encodeURIComponent(p.state.name)}`);
+          setDistrictsUrl(dres.ok ? `/api/districts?state=${encodeURIComponent(p.state.name)}` : null);
+        } catch {
+          setDistrictsUrl(null);
+        }
+      }
+      // Slightly inflate the bbox so neighbouring villages render too.
+      const dx = (e - w) * 0.5;
+      const dy = (n - s) * 0.5;
+      setVillagesUrl(
+        `/api/villages?bbox=${encodeURIComponent(`${w - dx},${s - dy},${e + dx},${n + dy}`)}`,
+      );
+      if (p.village) {
+        setParcelsUrl(`/api/parcels/by-village?village_id=${p.village.id}`);
+      }
+    } catch {
+      /* swallow — the sidebar still has the parcel id and will load detail */
+    }
+  }, [indiaLabel]);
+
   // On first mount, honour ?parcel=<uuid> (deep link from /saved or a share
   // link) and ?signin=1 (set by middleware-redirected pages that need auth).
   useEffect(() => {
@@ -448,13 +507,13 @@ export function MapView() {
     const params = new URLSearchParams(window.location.search);
     const parcel = params.get('parcel');
     if (parcel && /^[0-9a-f-]{36}$/i.test(parcel)) {
-      setSelectedParcel(parcel);
+      void goToParcelById(parcel);
     }
     if (params.get('signin') === '1') {
       // Fire after the AuthButton has mounted its event listener.
       setTimeout(() => window.dispatchEvent(new CustomEvent('landlens:signin')), 50);
     }
-  }, []);
+  }, [goToParcelById]);
 
   // Cmd/Ctrl+K opens search. Ignore when the user is typing in another input.
   useEffect(() => {
@@ -672,7 +731,7 @@ export function MapView() {
         onClick={() => setSearchOpen(true)}
         aria-label={tSearch('buttonAria')}
         title={tSearch('buttonTitle')}
-        className="pointer-events-auto absolute left-3 top-14 z-20 flex h-10 items-center gap-2 rounded-full bg-white/95 ps-3 pe-3.5 text-sm text-slate-600 shadow-md ring-1 ring-black/10 hover:bg-white hover:text-slate-900 md:pe-4"
+        className="pointer-events-auto absolute left-3 top-3 z-20 flex h-10 items-center gap-2 rounded-full bg-white/95 ps-3 pe-3.5 text-sm text-slate-600 shadow-md ring-1 ring-black/10 hover:bg-white hover:text-slate-900 md:top-14 md:pe-4"
       >
         <Search className="h-4 w-4" aria-hidden />
         <span className="hidden sm:inline">{tSearch('buttonLabel')}</span>
@@ -684,21 +743,21 @@ export function MapView() {
       {districtsError && (
         <div
           role="status"
-          className="pointer-events-auto absolute left-1/2 top-14 z-20 -translate-x-1/2 rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-800 shadow ring-1 ring-amber-200"
+          className="pointer-events-auto absolute left-1/2 top-28 z-20 -translate-x-1/2 rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-800 shadow ring-1 ring-amber-200 md:top-14"
         >
           {districtsError}
         </div>
       )}
 
-      <div className="pointer-events-none absolute right-3 top-16 z-20">
-        <NorthArrow bearing={bearing} onReset={onResetBearing} />
-      </div>
-
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2">
         <CoordReadout lat={cursor.lat} lng={cursor.lng} />
       </div>
 
-      <div className="pointer-events-none absolute bottom-24 right-4 z-20">
+      {/* Stacked right-bottom controls — keeps the north arrow out of the
+          basemap-dropdown's path. LocateMe sits at the bottom; the arrow
+          rides directly above it. */}
+      <div className="pointer-events-none absolute bottom-24 right-4 z-20 flex flex-col items-end gap-2">
+        <NorthArrow bearing={bearing} onReset={onResetBearing} />
         <LocateMe onLocate={onLocate} />
       </div>
 

@@ -66,7 +66,17 @@
       "Bash(curl -fsS \"http://localhost:3002/en\" -o /dev/null -w \"homepage HTTP %{http_code}\\\\n\")",
       "Bash(curl -sS -o /tmp/landlens_root.html -w \"root_status=%{http_code}\\\\n\" http://localhost:3334/ -L)",
       "Bash(curl -sS -o /tmp/landlens_hi.html -w \"hi_status=%{http_code}\\\\n\" http://localhost:3334/hi)",
-      "Bash(curl -sS -o /tmp/landlens_ur.html -w \"ur_status=%{http_code}\\\\n\" http://localhost:3334/ur)"
+      "Bash(curl -sS -o /tmp/landlens_ur.html -w \"ur_status=%{http_code}\\\\n\" http://localhost:3334/ur)",
+      "Bash(supabase --version)",
+      "Bash(grep -c \"^[A-Z_]*=\" /c/dev/landlens/.env.local 2>&1; echo \"---\"; grep -E \"^\\(NEXT_PUBLIC_SUPABASE_URL|DIRECT_URL|DATABASE_URL\\)=\" /c/dev/landlens/.env.local | sed 's/=.*$/=<set>/' 2>&1; echo \"---\"; ls /c/dev/landlens/supabase/.temp 2>&1; ls ~/.supabase 2>&1 | head -5)",
+      "Read(//c/Users/Mohd Ammar Mughees/**)",
+      "Bash(supabase projects *)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "Bash(psql --version)",
+      "Bash(env)",
+      "Bash(supabase --help)",
+      "Bash(supabase config *)",
+      "Bash(supabase init *)"
     ],
     "additionalDirectories": [
       "\\tmp",
